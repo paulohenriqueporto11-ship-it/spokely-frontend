@@ -2,268 +2,374 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spokely</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Spokely App</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; box-sizing: border-box; }
-        .container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
-        
-        /* HEADER COM BARRA DE XP */
-        .card-header { background: #1f1f1f; padding: 1rem; border-radius: 16px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .top-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .lvl-badge { font-weight: 800; color: #adff2f; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
-        .xp-val { font-size: 0.9rem; font-weight: bold; color: #fff; }
-        
-        /* Barra de XP com transição suave */
-        .xp-track { width: 100%; height: 10px; background: #000; border-radius: 5px; overflow: hidden; position: relative; border: 1px solid #333; }
-        .xp-fill { 
-            height: 100%; 
-            background: linear-gradient(90deg, #adff2f, #85cc00); 
-            width: 0%; 
-            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); 
-            box-shadow: 0 0 10px rgba(173, 255, 47, 0.3);
+        /* --- ESTILO GERAL MOBILE --- */
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; 
+            margin: 0; padding: 0; height: 100vh; overflow: hidden; 
+            display: flex; flex-direction: column;
         }
 
-        /* MENU DE DIFICULDADE */
-        .difficulty-screen { display: flex; flex-direction: column; gap: 10px; }
-        .diff-btn { 
-            padding: 20px; border-radius: 16px; border: 1px solid #333; background: #1f1f1f; 
-            text-align: left; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center;
+        /* --- HEADER FIXO --- */
+        header {
+            padding: 15px 20px; background: #1f1f1f; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
         }
-        .diff-btn:hover { border-color: #adff2f; transform: translateX(5px); background: #252525; }
-        .diff-title { font-weight: bold; font-size: 1.1rem; color: #fff; display: block; }
-        .diff-desc { font-size: 0.8rem; color: #888; display: block; margin-top: 4px; }
-        .diff-icon { font-size: 1.5rem; }
+        .header-stats { display: flex; gap: 15px; }
+        .stat-badge { 
+            background: #2a2a2a; padding: 5px 12px; border-radius: 20px; 
+            font-size: 0.85rem; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 5px;
+            border: 1px solid #333;
+        }
+        .icon-xp { color: #adff2f; }
+        .icon-heart { color: #ff4d4d; }
 
-        /* QUIZ */
-        .quiz-screen { display: none; flex-direction: column; gap: 20px; }
-        .quiz-card { background: #1f1f1f; padding: 2rem; border-radius: 20px; border: 1px solid #333; text-align: center; min-height: 300px; display: flex; flex-direction: column; justify-content: center; position: relative; }
-        .quiz-question { font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 25px; line-height: 1.4; }
-        .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+        /* --- CONTEÚDO PRINCIPAL (TELAS) --- */
+        main { flex: 1; position: relative; overflow: hidden; }
+        .screen { 
+            position: absolute; top:0; left:0; width:100%; height:100%; 
+            display: none; flex-direction: column; 
+            overflow-y: auto; /* Permite rolar conteúdo vertical se precisar */
+        }
+        .screen.active { display: flex; }
+
+        /* --- TELA: MAPA (SIDE SCROLLING) --- */
+        #screen-map {
+            background: #121212;
+            /* Centraliza o mapa verticalmente */
+            justify-content: center; 
+            overflow-x: auto; /* Permite rolar para os lados */
+            overflow-y: hidden;
+        }
+
+        /* Container do Trilho */
+        .map-track-container {
+            display: flex;
+            align-items: center;
+            padding: 0 50vw 0 50px; /* Espaço pro boneco não ficar colado */
+            min-width: max-content; /* Cresce conforme os níveis */
+            height: 100%;
+        }
+
+        /* O Trilho (Linha pontilhada) */
+        .map-line {
+            position: absolute; left: 0; height: 4px; background: #333; 
+            z-index: 0; width: 100%;
+        }
+
+        /* Os Níveis (Bolinhas) */
+        .level-node {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: #2a2a2a; border: 4px solid #444;
+            margin-right: 40px; /* Espaço entre fases */
+            position: relative; z-index: 2;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: 900; color: #666; font-size: 1.2rem;
+            cursor: pointer; transition: transform 0.2s;
+            flex-shrink: 0; /* Não deixa amassar */
+        }
+
+        /* Estado: Concluído */
+        .level-node.completed { background: #adff2f; border-color: #adff2f; color: #000; box-shadow: 0 0 15px rgba(173, 255, 47, 0.3); }
         
-        .btn-option { 
-            background: #2a2a2a; border: 2px solid transparent; color: #ddd; 
-            padding: 15px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; 
+        /* Estado: Atual (Onde estou) */
+        .level-node.current { 
+            background: #fff; border-color: #fff; color: #000; transform: scale(1.1); 
+            box-shadow: 0 0 20px rgba(255,255,255,0.4);
         }
-        .btn-option:hover { background: #333; transform: scale(1.01); border-color: #555; }
-        .btn-option.correct { background: #adff2f; color: #000; border-color: #adff2f; font-weight: 800; }
-        .btn-option.wrong { background: #ff4d4d; color: #fff; border-color: #ff4d4d; opacity: 0.6; }
-
-        .btn-back { background: transparent; border: none; color: #666; cursor: pointer; text-decoration: underline; margin-top: 10px; }
-
-        /* MENSAGEM DE CARREGANDO */
-        #loadingOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#0f0f0f; display:flex; justify-content:center; align-items:center; z-index:99; }
         
-        /* Efeito XP */
-        .float-xp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #adff2f; font-size: 4rem; font-weight: 900; opacity: 0; pointer-events: none; z-index: 10; text-shadow: 0 0 20px rgba(0,0,0,1); }
-        @keyframes floatUp { 
-            0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; } 
-            50% { transform: translate(-50%, -50px) scale(1.2); opacity: 1; } 
-            100% { transform: translate(-50%, -100px) scale(1); opacity: 0; } 
-        }
+        /* Estado: Bloqueado */
+        .level-node.locked { opacity: 0.6; pointer-events: none; }
 
+        /* O AVATAR (Mascote) */
+        .avatar-marker {
+            position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+            width: 50px; height: 50px; 
+            background-image: url('https://api.dicebear.com/7.x/bottts/svg?seed=Spokely'); /* Avatar Robô */
+            background-size: cover;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+            animation: bounce 1s infinite alternate;
+            z-index: 5;
+            pointer-events: none;
+        }
+        @keyframes bounce { from { top: -55px; } to { top: -45px; } }
+
+        /* --- TELA: QUIZ (MODAL) --- */
+        #quiz-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100;
+            display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+        }
+        .quiz-card {
+            background: #1f1f1f; width: 100%; max-width: 350px; padding: 2rem; border-radius: 20px;
+            border: 1px solid #333; text-align: center;
+        }
+        .quiz-question { font-size: 1.3rem; font-weight: 700; margin-bottom: 20px; color: #fff; }
+        .quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+        .btn-opt { 
+            padding: 15px; background: #2a2a2a; border: 1px solid #444; color: #fff; 
+            border-radius: 10px; font-weight: 600; cursor: pointer; 
+        }
+        .btn-opt.correct { background: #adff2f; color: #000; border-color: #adff2f; }
+        .btn-opt.wrong { background: #ff4d4d; opacity: 0.5; }
+
+        /* --- BARRA INFERIOR (NAVIGATION) --- */
+        nav {
+            background: #1f1f1f; border-top: 1px solid #333; height: 65px;
+            display: flex; justify-content: space-around; align-items: center; z-index: 20;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            color: #666; text-decoration: none; font-size: 0.7rem; width: 60px; cursor: pointer;
+        }
+        .nav-item .material-icons-round { font-size: 1.8rem; }
+        .nav-item.active { color: #adff2f; }
+
+        /* LOADING */
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:#0f0f0f; z-index:200; display:flex; justify-content:center; align-items:center; color:#adff2f; font-weight:bold; }
     </style>
 </head>
 <body>
 
-<div id="loadingOverlay">
-    <p style="color:#adff2f; font-weight:bold; animation: blink 1s infinite;">CARREGANDO PERFIL...</p>
-</div>
+    <div id="loading">CARREGANDO MUNDO...</div>
 
-<div class="container" id="mainApp" style="opacity:0; transition: opacity 0.5s;">
-    
-    <div class="card-header">
-        <div class="top-info">
-            <span class="lvl-badge">LEVEL <span id="lvlDisplay">--</span></span>
-            <span class="xp-val"><span id="xpText">0</span> XP</span>
+    <header>
+        <div style="font-weight:900; color:#fff; letter-spacing:-1px;">SPOKELY</div>
+        <div class="header-stats">
+            <div class="stat-badge"><span class="material-icons-round icon-heart" style="font-size:1rem;">favorite</span> <span id="livesDisplay">5</span></div>
+            <div class="stat-badge"><span class="material-icons-round icon-xp" style="font-size:1rem;">bolt</span> <span id="xpDisplay">0</span></div>
         </div>
-        <div class="xp-track">
-            <div id="xpBar" class="xp-fill"></div>
-        </div>
-        <div style="text-align:right; font-size:0.7rem; color:#666; margin-top:5px;">
-            Próximo nível em: <span id="xpNext">100</span> XP
-        </div>
-    </div>
+    </header>
 
-    <div id="screenDifficulty" class="difficulty-screen">
-        <h2 style="color:#666; font-size:0.9rem; margin-left:5px; text-transform:uppercase; letter-spacing:1px;">Escolha a Dificuldade</h2>
-        
-        <div class="diff-btn" onclick="startQuiz('easy')">
-            <div>
-                <span class="diff-title">Easy (Básico)</span>
-                <span class="diff-desc">Palavras simples e frases curtas</span>
+    <main>
+        <div id="screen-home" class="screen" style="padding:20px;">
+            <h2 style="color:#adff2f;">Bem-vindo de volta!</h2>
+            <div style="background:#222; padding:20px; border-radius:15px; margin-bottom:20px;">
+                <h3 style="margin:0; color:#fff;">Sua Meta Diária</h3>
+                <p style="color:#888;">Complete 3 níveis hoje.</p>
+                <div style="height:6px; background:#444; border-radius:3px; margin-top:10px;"><div style="width:30%; height:100%; background:#adff2f; border-radius:3px;"></div></div>
             </div>
-            <span class="diff-icon">🌱</span>
+            <p style="text-align:center; color:#666;">Vá para a aba <b>ESTUDAR</b> para jogar!</p>
         </div>
 
-        <div class="diff-btn" onclick="startQuiz('normal')">
-            <div>
-                <span class="diff-title">Normal (Intermediário)</span>
-                <span class="diff-desc">Gramática e conversação</span>
-            </div>
-            <span class="diff-icon">🔥</span>
+        <div id="screen-map" class="screen active">
+            <div class="map-track-container" id="mapTrack">
+                <div class="map-line"></div>
+                </div>
         </div>
 
-        <div class="diff-btn" onclick="startQuiz('hard')">
-            <div>
-                <span class="diff-title">Hard (Avançado)</span>
-                <span class="diff-desc">Expressões complexas</span>
-            </div>
-            <span class="diff-icon">💀</span>
+        <div id="screen-profile" class="screen" style="padding:20px; text-align:center;">
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Spokely" style="width:100px; height:100px; border-radius:50%; border:3px solid #adff2f; margin-bottom:10px;">
+            <h2 id="userName">Viajante</h2>
+            <p style="color:#666;">Nível Atual: <span id="lvlDisplay">1</span></p>
         </div>
-    </div>
+    </main>
 
-    <div id="screenQuiz" class="quiz-screen">
+    <div id="quiz-overlay">
         <div class="quiz-card">
-            <div class="float-xp" id="floatXp">+15 XP</div>
-            
+            <div style="text-align:right; margin-bottom:10px;">
+                <span style="background:#333; padding:5px 10px; border-radius:10px; font-size:0.8rem; color:#adff2f;" id="qDifficulty">NORMAL</span>
+            </div>
             <p class="quiz-question" id="qText">Carregando...</p>
-            <div class="quiz-options" id="qOptions"></div>
+            <div class="quiz-opts" id="qOptions"></div>
+            <button onclick="closeQuiz()" style="margin-top:20px; background:none; border:none; color:#666; text-decoration:underline; cursor:pointer;">Sair (Perde Vida)</button>
         </div>
-        <button class="btn-back" onclick="showDifficultyScreen()">← Voltar para o Menu</button>
     </div>
 
-</div>
+    <nav>
+        <div class="nav-item" onclick="switchScreen('home', this)">
+            <span class="material-icons-round">home</span>
+            <span>Home</span>
+        </div>
+        <div class="nav-item active" onclick="switchScreen('map', this)">
+            <span class="material-icons-round">map</span>
+            <span>Estudar</span>
+        </div>
+        <div class="nav-item" onclick="switchScreen('profile', this)">
+            <span class="material-icons-round">person</span>
+            <span>Perfil</span>
+        </div>
+    </nav>
 
 <script>
-    const API_URL = "https://spokely-backend-1.onrender.com"; // SEU BACKEND
+    // --- CONFIG ---
+    const API_URL = "https://spokely-backend-1.onrender.com";
     
-    // ⚠️ SUBSTITUA PELO SEU ID
-    const userId = "81d8e5b7-edb2-4227-9fb2-8d4863b51414"; 
+    // ⚠️ SEU ID (MANTENHA O MESMO PARA CONTINUAR DE ONDE PAROU)
+    const userId = "COLE_SEU_UUID_AQUI"; 
 
-    // Perguntas (MVP)
-    const questionBank = {
-        easy: [
-            { text: "Traduza: 'Good Morning'", options: ["Boa noite", "Boa tarde", "Bom dia", "Olá"], correct: 2, xp: 15 },
-            { text: "O que é 'Apple'?", options: ["Uva", "Maçã", "Pera", "Banana"], correct: 1, xp: 15 },
-            { text: "Complete: She ___ happy.", options: ["are", "is", "am", "be"], correct: 1, xp: 15 }
-        ],
-        normal: [
-            { text: "Passado de 'Go':", options: ["Gone", "Goed", "Went", "Gowing"], correct: 2, xp: 25 },
-            { text: "Traduza: 'I'm starving'", options: ["Estou com sede", "Estou morrendo de fome", "Estou cansado", "Estou feliz"], correct: 1, xp: 25 }
-        ],
-        hard: [
-            { text: "Significado de 'Give up':", options: ["Levantar", "Desistir", "Começar", "Doar"], correct: 1, xp: 40 },
-            { text: "Qual a forma correta?", options: ["I have went", "I have gone", "I has gone", "I did gone"], correct: 1, xp: 40 }
-        ]
-    };
-
-    let currentDifficulty = 'easy';
-    let currentQ = null;
+    // --- ESTADO ---
+    let userLevel = 1;
+    let userXp = 0;
+    const totalMapLevels = 50; // Vamos gerar 50 níveis pro mapa
+    
+    // --- ELEMENTOS ---
+    const mapTrack = document.getElementById('mapTrack');
+    const loading = document.getElementById('loading');
+    const quizOverlay = document.getElementById('quiz-overlay');
 
     // --- INICIALIZAÇÃO ---
-    // Assim que a janela carrega, chama o perfil
     window.onload = async () => {
         await loadProfile();
+        renderMap();
+        loading.style.display = 'none';
+        
+        // Foca o scroll no nível atual
+        setTimeout(scrollToCurrentLevel, 500);
     };
 
-    async function loadProfile() {
-        try {
-            // Chama a nova rota /get-profile
-            const res = await fetch(`${API_URL}/get-profile?user_id=${userId}`);
-            const data = await res.json();
-            
-            if (data.level !== undefined) {
-                updateStats({ 
-                    new_level: data.level, 
-                    current_xp: data.xp 
-                });
+    // --- NAVEGAÇÃO ---
+    function switchScreen(screenName, btnElement) {
+        // Esconde todas
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        
+        // Mostra a certa
+        document.getElementById(`screen-${screenName}`).classList.add('active');
+        btnElement.classList.add('active');
+
+        if(screenName === 'map') scrollToCurrentLevel();
+    }
+
+    // --- LÓGICA DO MAPA ---
+    function renderMap() {
+        // Limpa (mantendo a linha de fundo se quiser, mas aqui vou recriar)
+        mapTrack.innerHTML = '<div class="map-line" style="position:absolute; width:100%; top:50%; transform:translateY(-50%); height:4px; background:#333; z-index:0;"></div>';
+
+        for (let i = 1; i <= totalMapLevels; i++) {
+            const node = document.createElement('div');
+            node.className = 'level-node';
+            node.innerText = i;
+            node.id = `level-${i}`;
+
+            // Estados do nível
+            if (i < userLevel) {
+                node.classList.add('completed');
+                node.innerHTML = '<span class="material-icons-round">check</span>';
+                node.onclick = () => alert("Você já completou esse nível! 🎉");
+            } else if (i === userLevel) {
+                node.classList.add('current');
+                // Adiciona o Boneco
+                const avatar = document.createElement('div');
+                avatar.className = 'avatar-marker';
+                node.appendChild(avatar);
                 
-                // Tira o loading e mostra o app
-                document.getElementById('loadingOverlay').style.display = 'none';
-                document.getElementById('mainApp').style.opacity = '1';
+                // Clique abre o quiz
+                node.onclick = () => openQuiz(i);
+            } else {
+                node.classList.add('locked');
+                node.innerHTML = '<span class="material-icons-round" style="font-size:1.2rem;">lock</span>';
             }
-        } catch (e) {
-            console.error(e);
-            alert("Erro ao carregar perfil. O Backend tá ligado?");
+
+            mapTrack.appendChild(node);
+        }
+    }
+
+    function scrollToCurrentLevel() {
+        const current = document.querySelector('.level-node.current');
+        if(current) {
+            current.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'center' });
         }
     }
 
     // --- LÓGICA DO QUIZ ---
-    function showDifficultyScreen() {
-        document.getElementById('screenQuiz').style.display = 'none';
-        document.getElementById('screenDifficulty').style.display = 'flex';
-    }
+    const questions = [
+        { t: "Traduza 'Water'", o: ["Fogo", "Terra", "Água", "Ar"], c: 2 },
+        { t: "O passado de 'Eat'", o: ["Eated", "Ate", "Eaten", "Eating"], c: 1 },
+        { t: "Complete: She ___ happy", o: ["is", "are", "am", "be"], c: 0 },
+        { t: "Cor 'Yellow'", o: ["Azul", "Amarelo", "Verde", "Roxo"], c: 1 }
+    ];
 
-    function startQuiz(difficulty) {
-        currentDifficulty = difficulty;
-        document.getElementById('screenDifficulty').style.display = 'none';
-        document.getElementById('screenQuiz').style.display = 'flex';
-        loadNextQuestion();
-    }
+    let currentQuizLevel = 0;
 
-    function loadNextQuestion() {
-        const list = questionBank[currentDifficulty];
-        currentQ = list[Math.floor(Math.random() * list.length)];
+    function openQuiz(level) {
+        currentQuizLevel = level;
+        quizOverlay.style.display = 'flex';
         
-        document.getElementById('qText').innerText = currentQ.text;
-        const optsDiv = document.getElementById('qOptions');
-        optsDiv.innerHTML = ''; 
+        // Sorteia pergunta (no futuro vem do banco baseada no nivel)
+        const q = questions[Math.floor(Math.random() * questions.length)];
+        
+        document.getElementById('qText').innerText = q.t;
+        const opts = document.getElementById('qOptions');
+        opts.innerHTML = '';
 
-        currentQ.options.forEach((opt, index) => {
+        q.o.forEach((opt, idx) => {
             const btn = document.createElement('button');
-            btn.className = 'btn-option';
+            btn.className = 'btn-opt';
             btn.innerText = opt;
-            btn.onclick = () => checkAnswer(btn, index);
-            optsDiv.appendChild(btn);
+            btn.onclick = () => checkAnswer(idx, q.c, btn);
+            opts.appendChild(btn);
         });
     }
 
-    async function checkAnswer(btnElement, index) {
-        const allBtns = document.querySelectorAll('.btn-option');
-        allBtns.forEach(b => b.disabled = true);
+    function closeQuiz() {
+        quizOverlay.style.display = 'none';
+    }
 
-        if (index === currentQ.correct) {
-            btnElement.classList.add('correct');
-            showXpAnimation(currentQ.xp);
-            await sendXpToBackend(currentQ.xp);
+    async function checkAnswer(selected, correct, btn) {
+        const all = document.querySelectorAll('.btn-opt');
+        all.forEach(b => b.disabled = true);
+
+        if (selected === correct) {
+            btn.classList.add('correct');
+            // Ganha XP e Sobe Nível
+            await sendProgress(25); // 25 XP por fase
         } else {
-            btnElement.classList.add('wrong');
-            allBtns[currentQ.correct].classList.add('correct');
+            btn.classList.add('wrong');
+            // Perde Vida (Visual por enquanto)
+            alert("Errou! Tente de novo.");
+            setTimeout(closeQuiz, 1000);
         }
-
-        setTimeout(() => loadNextQuestion(), 1500);
     }
 
-    function showXpAnimation(amount) {
-        const floatXp = document.getElementById('floatXp');
-        floatXp.innerText = `+${amount} XP`;
-        floatXp.style.animation = 'none';
-        floatXp.offsetHeight; 
-        floatXp.style.animation = 'floatUp 0.8s ease-out';
+    // --- CONEXÃO COM BACKEND ---
+    async function loadProfile() {
+        try {
+            const res = await fetch(`${API_URL}/get-profile?user_id=${userId}`);
+            const data = await res.json();
+            if (data.level) {
+                userLevel = data.level;
+                userXp = data.xp;
+                updateUI();
+            }
+        } catch (e) { console.error(e); }
     }
 
-    async function sendXpToBackend(amount) {
+    async function sendProgress(xpAmount) {
         try {
             const res = await fetch(`${API_URL}/add-xp`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: userId, xp_amount: amount }) 
+                body: JSON.stringify({ user_id: userId, xp_amount: xpAmount }) 
             });
             const data = await res.json();
-            if(data.success) updateStats(data);
-        } catch(e) { console.error(e); }
+            if (data.success) {
+                // Atualiza localmente
+                userLevel = data.new_level; // Backend já calculou se subiu
+                userXp = data.current_xp;
+                updateUI();
+                renderMap(); // Re-renderiza o mapa pra mover o boneco
+                
+                setTimeout(() => {
+                    closeQuiz();
+                    scrollToCurrentLevel(); // Rola pro novo nível
+                    alert(`Nível Concluído! +${xpAmount} XP`);
+                }, 1000);
+            }
+        } catch (e) { console.error(e); }
     }
 
-    function updateStats(data) {
-        document.getElementById('lvlDisplay').innerText = data.new_level;
-        document.getElementById('xpText').innerText = data.current_xp;
-
-        // MATEMÁTICA DA BARRA (Supondo 100 XP por nível)
-        const xpPorNivel = 100;
-        // Pega só o XP "sobra" do nível atual
-        const progressoAtual = data.current_xp % xpPorNivel;
-        
-        // Exemplo: Se tenho 150 XP. Nível 2 (Sobra 50). Barra = 50%
-        document.getElementById('xpBar').style.width = `${progressoAtual}%`;
-        document.getElementById('xpNext').innerText = xpPorNivel - progressoAtual;
+    function updateUI() {
+        document.getElementById('xpDisplay').innerText = userXp;
+        document.getElementById('lvlDisplay').innerText = userLevel;
+        // Se quiser usar o Nível como "Fase", o backend precisa alinhar isso.
+        // Por enquanto, assumimos que Nivel do usuario = Fase do Mapa.
     }
 
 </script>
-
-<style>
-@keyframes blink { 0% {opacity:1} 50% {opacity:0.5} 100% {opacity:1} }
-</style>
-
 </body>
 </html>
