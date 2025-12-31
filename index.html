@@ -3,98 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spokely - English Tracker</title>
+    <title>Spokely - Learn English</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; box-sizing: border-box; }
-        .container { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 20px; }
+        .container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
         
-        /* CARD PRINCIPAL */
-        .card { background: #1f1f1f; padding: 1.5rem; border-radius: 16px; border: 1px solid #333; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-        
-        .level-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
-        .lvl-badge { background: #333; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #adff2f; letter-spacing: 1px; }
-        .xp-text { font-size: 0.8rem; color: #666; }
-        
-        .xp-track { width: 100%; height: 6px; background: #000; border-radius: 3px; overflow: hidden; }
-        .xp-fill { height: 100%; background: #adff2f; width: 0%; transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        /* CARD STATUS */
+        .card-status { background: #1f1f1f; padding: 1rem 1.5rem; border-radius: 16px; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .lvl-badge { background: #333; padding: 5px 10px; border-radius: 8px; font-weight: 800; color: #adff2f; font-size: 0.9rem; }
+        .xp-container { text-align: right; }
+        .xp-val { font-size: 1.2rem; font-weight: bold; color: #fff; }
+        .xp-label { font-size: 0.7rem; color: #666; text-transform: uppercase; }
 
-        /* TIMER DE IMERSÃO */
-        .focus-area { text-align: center; margin: 10px 0; }
-        .timer { font-size: 3rem; font-weight: 700; color: #fff; font-family: monospace; letter-spacing: -2px; }
-        .label-timer { font-size:0.8rem; color:#666; margin-top:-5px; margin-bottom:15px; text-transform: uppercase; letter-spacing: 1px; }
+        /* ÁREA DO QUIZ (HERO) */
+        .quiz-card { background: #1f1f1f; padding: 2rem; border-radius: 20px; border: 1px solid #333; text-align: center; position: relative; overflow: hidden; min-height: 300px; display: flex; flex-direction: column; justify-content: center; }
+        .quiz-question { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 25px; line-height: 1.4; }
+        .quiz-options { display: flex; flex-direction: column; gap: 10px; }
         
-        .btn-focus { width: 100%; padding: 12px; background: #333; color: #fff; border: 1px solid #444; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-focus:hover { background: #444; border-color: #666; }
-
-        /* LISTA DE QUESTS DE IDIOMA */
-        h2 { font-size: 0.9rem; color: #666; text-transform: uppercase; margin: 0 0 10px 5px; letter-spacing: 1px; font-weight: 700; }
-        
-        .quest-item { 
-            background: #181818; padding: 15px; border-radius: 12px; border: 1px solid #2a2a2a; 
-            display: flex; align-items: center; justify-content: space-between; transition: 0.2s; cursor: pointer;
-            margin-bottom: 10px;
+        .btn-option { 
+            background: #2a2a2a; border: 2px solid transparent; color: #ddd; 
+            padding: 15px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; 
         }
-        .quest-item:hover { transform: translateY(-2px); border-color: #adff2f; }
-        .quest-item.done { opacity: 0.5; pointer-events: none; border-color: #333; background: #111; }
+        .btn-option:hover { background: #333; transform: scale(1.01); }
+        .btn-option:active { transform: scale(0.98); }
         
-        .q-info { display: flex; flex-direction: column; }
-        .q-title { font-weight: 600; font-size: 0.95rem; color: #fff; }
-        .q-xp { font-size: 0.75rem; color: #adff2f; font-weight: bold; margin-top: 2px; }
-        
-        .checkbox { 
-            width: 24px; height: 24px; border: 2px solid #444; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; color: transparent; transition: 0.2s;
-        }
-        .quest-item:hover .checkbox { border-color: #adff2f; }
-        .quest-item.done .checkbox { background: #adff2f; border-color: #adff2f; color: #000; }
+        /* Estados de Resposta */
+        .btn-option.correct { background: #adff2f; color: #000; border-color: #adff2f; }
+        .btn-option.wrong { background: #ff4d4d; color: #fff; border-color: #ff4d4d; opacity: 0.6; }
 
+        /* CHECKLIST SECUNDÁRIO */
+        .mini-quests { margin-top: 10px; }
+        h3 { font-size: 0.85rem; color: #666; text-transform: uppercase; margin-left: 10px; margin-bottom: 10px; letter-spacing: 1px; }
+        .task-row { display: flex; align-items: center; justify-content: space-between; background: #181818; padding: 12px 15px; border-radius: 10px; border: 1px solid #2a2a2a; margin-bottom: 8px; opacity: 0.8; }
+        .task-row span { font-size: 0.9rem; }
+        .task-check { width: 18px; height: 18px; border: 2px solid #444; border-radius: 4px; }
+
+        /* ANIMAÇÃO DE XP */
+        .float-xp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #adff2f; font-size: 3rem; font-weight: 900; opacity: 0; pointer-events: none; }
+        @keyframes floatUp { 
+            0% { transform: translate(-50%, -20%) scale(0.5); opacity: 0; } 
+            50% { transform: translate(-50%, -80%) scale(1.2); opacity: 1; } 
+            100% { transform: translate(-50%, -150%) scale(1); opacity: 0; } 
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     
-    <div class="card">
-        <div class="level-header">
-            <span class="lvl-badge">ENGLISH LEVEL <span id="lvlDisplay">1</span></span>
-            <span class="xp-text" id="xpText">0 XP</span>
-        </div>
-        <div class="xp-track">
-            <div id="xpBar" class="xp-fill"></div>
+    <div class="card-status">
+        <div class="lvl-badge">LEVEL <span id="lvlDisplay">1</span></div>
+        <div class="xp-container">
+            <div class="xp-val" id="xpText">0</div>
+            <div class="xp-label">Total XP</div>
         </div>
     </div>
 
-    <div class="card focus-area">
-        <div class="timer" id="timerDisplay">00:10</div>
-        <p class="label-timer">Sessão de Imersão</p>
-        <button class="btn-focus" id="btnFocus">START STUDYING</button>
-    </div>
-
-    <div>
-        <h2>Daily Goals</h2>
+    <div class="quiz-card" id="quizArea">
+        <div class="float-xp" id="floatXp">+15 XP</div>
         
-        <div class="quest-item" onclick="completeQuest(this, 15)">
-            <div class="q-info">
-                <span class="q-title">Aprender 5 Verbos</span>
-                <span class="q-xp">+15 XP (Vocabulário)</span>
-            </div>
-            <div class="checkbox">✓</div>
+        <div id="qContent">
+            <p class="quiz-question" id="qText">Carregando...</p>
+            <div class="quiz-options" id="qOptions">
+                </div>
         </div>
+    </div>
 
-        <div class="quest-item" onclick="completeQuest(this, 30)">
-            <div class="q-info">
-                <span class="q-title">Shadowing (1 min)</span>
-                <span class="q-xp">+30 XP (Speaking)</span>
-            </div>
-            <div class="checkbox">✓</div>
+    <div class="mini-quests">
+        <h3>Daily Streaks</h3>
+        <div class="task-row">
+            <span>🔥 1 Day Streak</span>
+            <div class="task-check" style="background:#adff2f; border:none;"></div>
         </div>
-
-        <div class="quest-item" onclick="completeQuest(this, 50)">
-            <div class="q-info">
-                <span class="q-title">Ouvir Podcast em EN</span>
-                <span class="q-xp">+50 XP (Listening)</span>
-            </div>
-            <div class="checkbox">✓</div>
+        <div class="task-row">
+            <span>🎧 Listen to a Podcast</span>
+            <div class="task-check"></div>
         </div>
     </div>
 
@@ -103,92 +86,122 @@
 <script>
     const API_URL = "https://spokely-backend-1.onrender.com"; // SEU BACKEND
     
-    // ⚠️ COLOQUE SEU ID AQUI
+    // ⚠️ COLOQUE SEU ID DO SUPABASE AQUI
     const userId = "COLE_SEU_UUID_AQUI"; 
 
-    // Elementos
-    const lvlDisplay = document.getElementById('lvlDisplay');
-    const xpBar = document.getElementById('xpBar');
+    // --- BANCO DE QUESTÕES (MVP: Hardcoded no Front) ---
+    // Num futuro, isso viria do Backend (/get-questions)
+    const questions = [
+        {
+            text: "Como se diz 'Café da manhã' em inglês?",
+            options: ["Lunch", "Dinner", "Breakfast", "Snack"],
+            correct: 2, // Índice da correta (0, 1, 2...)
+            xp: 15
+        },
+        {
+            text: "Complete: The book is ___ the table.",
+            options: ["in", "on", "at", "for"],
+            correct: 1,
+            xp: 10
+        },
+        {
+            text: "Qual destas palavras é um VERBO?",
+            options: ["Happy", "Run", "Blue", "House"],
+            correct: 1,
+            xp: 10
+        },
+        {
+            text: "Traduza: 'I am tired'",
+            options: ["Eu estou feliz", "Eu estou com fome", "Eu estou cansado", "Eu estou triste"],
+            correct: 2,
+            xp: 15
+        },
+        {
+            text: "O que significa 'Awesome'?",
+            options: ["Incrível", "Ruim", "Chato", "Mediano"],
+            correct: 0,
+            xp: 20
+        }
+    ];
+
+    let currentQ = null;
+    const qText = document.getElementById('qText');
+    const qOptions = document.getElementById('qOptions');
     const xpText = document.getElementById('xpText');
-    const btnFocus = document.getElementById('btnFocus');
-    const timerDisplay = document.getElementById('timerDisplay');
+    const lvlDisplay = document.getElementById('lvlDisplay');
+    const floatXp = document.getElementById('floatXp');
 
-    // Timer Logic
-    let timeLeft = 10;
-    let interval = null;
+    // Inicialização
+    loadNextQuestion();
 
-    btnFocus.onclick = () => {
-        if(interval) return;
-        btnFocus.innerText = "LISTENING...";
-        btnFocus.style.background = "#adff2f"; 
-        btnFocus.style.color = "#000";
-
-        interval = setInterval(() => {
-            timeLeft--;
-            timerDisplay.innerText = `00:${timeLeft < 10 ? '0'+timeLeft : timeLeft}`;
-            if(timeLeft <= 0) {
-                clearInterval(interval);
-                finishFocus();
-            }
-        }, 1000);
-    };
-
-    async function finishFocus() {
-        try {
-            const res = await fetch(`${API_URL}/complete-session`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: userId, minutes: 1 }) 
-            });
-            const data = await res.json();
-            updateStats(data);
-            alert("Imersão concluída! +10 XP");
-        } catch(e) { console.error(e); }
+    function loadNextQuestion() {
+        // Pega uma aleatória
+        currentQ = questions[Math.floor(Math.random() * questions.length)];
         
-        resetTimer();
+        qText.innerText = currentQ.text;
+        qOptions.innerHTML = ''; // Limpa botões antigos
+
+        // Cria os botões
+        currentQ.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-option';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(btn, index);
+            qOptions.appendChild(btn);
+        });
     }
 
-    function resetTimer() {
-        timeLeft = 10;
-        timerDisplay.innerText = "00:10";
-        btnFocus.innerText = "START STUDYING";
-        btnFocus.style.background = "#333"; 
-        btnFocus.style.color = "#fff";
-        interval = null;
+    async function checkAnswer(btnElement, index) {
+        // Trava cliques pra não bugar
+        const allBtns = document.querySelectorAll('.btn-option');
+        allBtns.forEach(b => b.disabled = true);
+
+        if (index === currentQ.correct) {
+            // ACERTOU
+            btnElement.classList.add('correct');
+            showXpAnimation(currentQ.xp);
+            await sendXpToBackend(currentQ.xp);
+        } else {
+            // ERROU
+            btnElement.classList.add('wrong');
+            // Mostra a certa pra ele aprender
+            allBtns[currentQ.correct].classList.add('correct');
+            // Não ganha XP, mas espera um pouco pra ler
+        }
+
+        // Espera 1.5s e carrega a próxima
+        setTimeout(() => {
+            loadNextQuestion();
+        }, 1500);
     }
 
-    // Quest Logic
-    async function completeQuest(element, xpAmount) {
-        if(element.classList.contains('done')) return;
+    function showXpAnimation(amount) {
+        floatXp.innerText = `+${amount} XP`;
+        floatXp.style.animation = 'none';
+        floatXp.offsetHeight; /* trigger reflow */
+        floatXp.style.animation = 'floatUp 1s ease-out';
+    }
 
-        element.classList.add('done');
-        
+    async function sendXpToBackend(amount) {
         try {
-            const res = await fetch(`${API_URL}/complete-quest`, {
+            const res = await fetch(`${API_URL}/add-xp`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: userId, xp_amount: xpAmount }) 
+                body: JSON.stringify({ user_id: userId, xp_amount: amount, source: 'quiz' }) 
             });
             const data = await res.json();
             
             if(data.success) {
-                updateStats(data);
-                if(data.leveled_up) alert("LEVEL UP! YOU ARE AMAZING! 🔥");
+                // Atualiza status na tela
+                lvlDisplay.innerText = data.new_level;
+                xpText.innerText = data.current_xp;
+                
+                if(data.leveled_up) alert("CONGRATS! LEVEL UP! 🚀");
             }
         } catch(e) {
-            console.error(e);
-            element.classList.remove('done');
-            alert("Erro de conexão");
+            console.error("Erro ao salvar XP", e);
         }
     }
-
-    function updateStats(data) {
-        if(!data) return;
-        lvlDisplay.innerText = data.new_level;
-        xpBar.style.width = `${data.current_xp}%`; 
-        xpText.innerText = `${data.current_xp} XP`;
-    }
-
 </script>
 </body>
 </html>
