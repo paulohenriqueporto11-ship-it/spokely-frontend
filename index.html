@@ -3,139 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spokely Focus</title>
+    <title>Spokely Dashboard</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #1f1f1f; padding: 2rem; border-radius: 16px; text-align: center; width: 320px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; box-sizing: border-box; }
+        .container { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 20px; }
         
-        /* Header com XP */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .level-info { text-align: left; width: 100%; }
-        .xp-track { width: 100%; height: 8px; background: #333; border-radius: 4px; margin-top: 5px; overflow: hidden; }
-        .xp-fill { height: 100%; background: #adff2f; width: 0%; transition: width 0.5s ease; }
+        /* CARD PRINCIPAL (STATUS) */
+        .card { background: #1f1f1f; padding: 1.5rem; border-radius: 16px; border: 1px solid #333; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         
-        /* Timer */
-        .timer-box { margin: 30px 0; }
-        .timer-text { font-size: 4.5rem; font-weight: 700; color: #fff; font-family: monospace; letter-spacing: -2px; }
-        .status-msg { color: #666; margin-top: -10px; font-size: 0.9rem; }
+        .level-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
+        .lvl-badge { background: #333; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #adff2f; }
+        .xp-text { font-size: 0.8rem; color: #666; }
+        
+        .xp-track { width: 100%; height: 6px; background: #000; border-radius: 3px; overflow: hidden; }
+        .xp-fill { height: 100%; background: #adff2f; width: 0%; transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
-        /* Botão */
-        button {
-            width: 100%; padding: 15px; font-size: 1rem; font-weight: bold;
-            background: #adff2f; color: #000; border: none; border-radius: 8px;
-            cursor: pointer; transition: 0.2s; text-transform: uppercase;
+        /* ÁREA DE FOCO */
+        .focus-area { text-align: center; margin: 10px 0; }
+        .timer { font-size: 3rem; font-weight: 700; color: #fff; font-family: monospace; letter-spacing: -2px; }
+        .btn-focus { width: 100%; padding: 12px; background: #333; color: #fff; border: 1px solid #444; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-focus:hover { background: #444; border-color: #666; }
+
+        /* LISTA DE QUESTS */
+        h2 { font-size: 1rem; color: #666; text-transform: uppercase; margin: 0 0 10px 5px; letter-spacing: 1px; }
+        
+        .quest-item { 
+            background: #181818; padding: 15px; border-radius: 12px; border: 1px solid #2a2a2a; 
+            display: flex; align-items: center; justify-content: space-between; transition: 0.2s; cursor: pointer;
+            margin-bottom: 10px;
         }
-        button:hover { background: #bfff55; transform: scale(1.02); }
-        button:disabled { background: #333; color: #888; cursor: wait; transform: none; }
+        .quest-item:hover { transform: translateY(-2px); border-color: #adff2f; }
+        .quest-item.done { opacity: 0.5; pointer-events: none; border-color: #333; background: #111; }
+        
+        .q-info { display: flex; flex-direction: column; }
+        .q-title { font-weight: 600; font-size: 0.95rem; }
+        .q-xp { font-size: 0.75rem; color: #adff2f; font-weight: bold; margin-top: 2px; }
+        
+        .checkbox { 
+            width: 24px; height: 24px; border: 2px solid #444; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; color: transparent; transition: 0.2s;
+        }
+        .quest-item:hover .checkbox { border-color: #adff2f; }
+        .quest-item.done .checkbox { background: #adff2f; border-color: #adff2f; color: #000; }
+
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div class="header">
-        <div class="level-info">
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#888;">
-                <span>NÍVEL <b id="lvlDisplay" style="color:#fff">1</b></span>
-                <span id="xpText">0 XP</span>
-            </div>
-            <div class="xp-track">
-                <div id="xpBar" class="xp-fill"></div>
-            </div>
+<div class="container">
+    
+    <div class="card">
+        <div class="level-header">
+            <span class="lvl-badge">NVL <span id="lvlDisplay">1</span></span>
+            <span class="xp-text" id="xpText">0 XP</span>
+        </div>
+        <div class="xp-track">
+            <div id="xpBar" class="xp-fill"></div>
         </div>
     </div>
 
-    <div class="timer-box">
-        <div id="timerDisplay" class="timer-text">00:10</div>
-        <p id="statusMsg" class="status-msg">Sessão de Teste (10s)</p>
+    <div class="card focus-area">
+        <div class="timer" id="timerDisplay">00:10</div>
+        <p style="font-size:0.8rem; color:#666; margin-top:-5px; margin-bottom:15px;">Modo Foco (Timer)</p>
+        <button class="btn-focus" id="btnFocus">INICIAR SESSÃO</button>
     </div>
 
-    <button id="btnAction">INICIAR FOCO</button>
+    <div>
+        <h2>Quests Rápidas</h2>
+        
+        <div class="quest-item" onclick="completeQuest(this, 10)">
+            <div class="q-info">
+                <span class="q-title">Beber Água</span>
+                <span class="q-xp">+10 XP</span>
+            </div>
+            <div class="checkbox">✓</div>
+        </div>
+
+        <div class="quest-item" onclick="completeQuest(this, 25)">
+            <div class="q-info">
+                <span class="q-title">Ler 1 página</span>
+                <span class="q-xp">+25 XP</span>
+            </div>
+            <div class="checkbox">✓</div>
+        </div>
+
+        <div class="quest-item" onclick="completeQuest(this, 50)">
+            <div class="q-info">
+                <span class="q-title">Arrumar a mesa</span>
+                <span class="q-xp">+50 XP</span>
+            </div>
+            <div class="checkbox">✓</div>
+        </div>
+    </div>
+
 </div>
 
 <script>
-    // --- CONFIG ---
     const API_URL = "https://spokely-backend-1.onrender.com"; // SEU BACKEND
     
-    // ⚠️ SUBSTITUA PELO SEU ID AQUI (O MESMO QUE USOU ANTES)
-    const userId = "81d8e5b7-edb2-4227-9fb2-8d4863b51414"; 
+    // ⚠️ COLOQUE SEU ID AQUI
+    const userId = "COLE_SEU_UUID_AQUI"; 
 
-    // --- ELEMENTOS ---
-    const btn = document.getElementById('btnAction');
-    const timerDisplay = document.getElementById('timerDisplay');
-    const xpBar = document.getElementById('xpBar');
+    // Elementos
     const lvlDisplay = document.getElementById('lvlDisplay');
+    const xpBar = document.getElementById('xpBar');
     const xpText = document.getElementById('xpText');
-    
-    let timeLeft = 10; 
+    const btnFocus = document.getElementById('btnFocus');
+    const timerDisplay = document.getElementById('timerDisplay');
+
+    // Timer Logic
+    let timeLeft = 10;
     let interval = null;
 
-    // --- FUNÇÕES ---
+    btnFocus.onclick = () => {
+        if(interval) return;
+        btnFocus.innerText = "FOCADO...";
+        btnFocus.style.background = "#adff2f"; 
+        btnFocus.style.color = "#000";
 
-    btn.onclick = () => {
-        if (interval) return;
-
-        // Trava a tela
-        btn.disabled = true;
-        btn.innerText = "FOCADO... 🤫";
-        document.getElementById('statusMsg').innerText = "Não feche a aba!";
-
-        // Inicia contagem
         interval = setInterval(() => {
             timeLeft--;
             timerDisplay.innerText = `00:${timeLeft < 10 ? '0'+timeLeft : timeLeft}`;
-
-            if (timeLeft <= 0) {
+            if(timeLeft <= 0) {
                 clearInterval(interval);
-                finishSession();
+                finishFocus();
             }
-        }, 1000); // 1 segundo
+        }, 1000);
     };
 
-    async function finishSession() {
-        timerDisplay.innerText = "🎉";
-        
+    async function finishFocus() {
+        // Reusa a lógica de XP mas chama a rota de sessão
         try {
-            // Avisa o backend que "trabalhou" 1 minuto (simulação)
             const res = await fetch(`${API_URL}/complete-session`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ user_id: userId, minutes: 1 }) 
             });
-            
             const data = await res.json();
-
-            if (data.success) {
-                // Atualiza Nível e XP na tela
-                lvlDisplay.innerText = data.new_level;
-                xpBar.style.width = `${data.current_xp}%`; // Assume que 100xp = 100% (simplificado)
-                xpText.innerText = `${data.current_xp} XP`;
-
-                // Feedback visual
-                btn.style.background = "#fff";
-                btn.innerText = `+${data.xp_earned} XP GANHO!`;
-                
-                if (data.leveled_up) alert("SUBIU DE NÍVEL! 🔥");
-            } else {
-                alert("Erro: " + (data.error || "Desconhecido"));
-            }
-
-        } catch (e) {
-            console.error(e);
-            btn.innerText = "ERRO AO SALVAR";
-        }
-
-        // Reseta tudo depois de 3 segundos pra testar de novo
-        setTimeout(() => {
-            timeLeft = 10;
-            timerDisplay.innerText = "00:10";
-            btn.innerText = "INICIAR FOCO";
-            btn.style.background = "#adff2f";
-            document.getElementById('statusMsg').innerText = "Sessão de Teste (10s)";
-            btn.disabled = false;
-            interval = null;
-        }, 3000);
+            updateStats(data);
+            alert("Sessão de Foco concluída! +10 XP");
+        } catch(e) { console.error(e); }
+        
+        resetTimer();
     }
-</script>
 
+    function resetTimer() {
+        timeLeft = 10;
+        timerDisplay.innerText = "00:10";
+        btnFocus.innerText = "INICIAR SESSÃO";
+        btnFocus.style.background = "#333"; 
+        btnFocus.style.color = "#fff";
+        interval = null;
+    }
+
+    // Quest Logic
+    async function completeQuest(element, xpAmount) {
+        if(element.classList.contains('done')) return; // Já fez
+
+        // Efeito visual imediato (Otimista)
+        element.classList.add('done');
+        
+        try {
+            const res = await fetch(`${API_URL}/complete-quest`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: userId, xp_amount: xpAmount }) 
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                updateStats(data);
+                if(data.leveled_up) alert("SUBIU DE NÍVEL! 🔥");
+            }
+        } catch(e) {
+            console.error(e);
+            element.classList.remove('done'); // Desfaz se der erro
+            alert("Erro de conexão");
+        }
+    }
+
+    function updateStats(data) {
+        if(!data) return;
+        lvlDisplay.innerText = data.new_level;
+        xpBar.style.width = `${data.current_xp}%`; // Assume 100xp = 100%
+        xpText.innerText = `${data.current_xp} XP`;
+    }
+
+</script>
 </body>
 </html>
