@@ -90,7 +90,7 @@
                 
                 posDisplay.innerText = `#${data.queue_pos}`;
                 // Total esperando - minha posição = gente na frente (cálculo simples)
-                totalDisplay.innerText = data.total_waiting; 
+                totalDisplay.innerText = data.total_waiting - 1; 
             } else {
                 // MODO: FORA DA FILA
                 queueArea.style.display = 'none';
