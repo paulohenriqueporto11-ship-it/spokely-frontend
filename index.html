@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fila Spokely</title>
+    <style>
+        body { font-family: sans-serif; background: #111; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #222; padding: 2rem; border-radius: 12px; text-align: center; width: 300px; border: 1px solid #333; }
+        h1 { margin-top: 0; color: #adff2f; }
+        .status { font-size: 1.2rem; margin: 20px 0; }
+        .pos { font-size: 3rem; font-weight: bold; color: #fff; }
+        .loader { color: #888; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Spokely</h1>
+    <div id="content">
+        <p>Carregando fila...</p>
+    </div>
+</div>
+
+<script>
+    // ⚠️ TROQUE PELA URL DO SEU BACKEND NO RENDER (sem a barra / no final)
+    const API_URL = "https://spokely-backend-1.onrender.com"; 
+
+    // Gera um ID falso só pra testar (num app real viria do Login)
+    let userId = localStorage.getItem('spokely_test_id');
+    if (!userId) {
+        userId = crypto.randomUUID();
+        localStorage.setItem('spokely_test_id', userId);
+    }
+
+    const contentDiv = document.getElementById('content');
+
+    async function checkQueue() {
+        try {
+            // Chama a rota que criamos: /queue-status?user_id=...
+            const response = await fetch(`${API_URL}/queue-status?user_id=${userId}`);
+            const data = await response.json();
+
+            if (data.queue_pos) {
+                contentDiv.innerHTML = `
+                    <p class="status">Sua posição:</p>
+                    <div class="pos">#${data.queue_pos}</div>
+                    <p class="loader">Total na fila: ${data.total_waiting}</p>
+                `;
+            } else {
+                // Se não retornou posição, provavelmente o usuário não tá na fila (tabela vazia)
+                // Vamos simular que ele entrou agora (Backend real teria botão "Entrar na Fila")
+                contentDiv.innerHTML = `<p>Você não está na fila.<br> (Crie lógica de Insert no Backend)</p>`;
+            }
+
+        } catch (error) {
+            console.error(error);
+            contentDiv.innerHTML = `<p style="color:red">Erro ao conectar no servidor.</p>`;
+        }
+    }
+
+    // Polling: Atualiza a cada 5 segundos
+    setInterval(checkQueue, 5000);
+    checkQueue(); // Chama a primeira vez
+</script>
+
+</body>
+</html>
