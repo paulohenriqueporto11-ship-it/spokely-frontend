@@ -3,112 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fila Spokely</title>
+    <title>Spokely Focus</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #1f1f1f; padding: 2.5rem; border-radius: 16px; text-align: center; width: 320px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { margin-top: 0; color: #adff2f; letter-spacing: -1px; }
-        .status-text { color: #888; font-size: 0.9rem; margin-bottom: 5px; }
-        .pos-number { font-size: 4rem; font-weight: 800; color: #fff; line-height: 1; margin: 10px 0; }
-        .loader { font-size: 0.8rem; color: #666; }
+        .card { background: #1f1f1f; padding: 2rem; border-radius: 16px; text-align: center; width: 320px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
+        /* Header com XP */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .level-info { text-align: left; width: 100%; }
+        .xp-track { width: 100%; height: 8px; background: #333; border-radius: 4px; margin-top: 5px; overflow: hidden; }
+        .xp-fill { height: 100%; background: #adff2f; width: 0%; transition: width 0.5s ease; }
+        
+        /* Timer */
+        .timer-box { margin: 30px 0; }
+        .timer-text { font-size: 4.5rem; font-weight: 700; color: #fff; font-family: monospace; letter-spacing: -2px; }
+        .status-msg { color: #666; margin-top: -10px; font-size: 0.9rem; }
+
+        /* Botão */
         button {
-            margin-top: 20px; padding: 12px 24px; width: 100%;
-            background: #adff2f; color: #000; font-weight: bold; font-size: 1rem;
-            border: none; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            width: 100%; padding: 15px; font-size: 1rem; font-weight: bold;
+            background: #adff2f; color: #000; border: none; border-radius: 8px;
+            cursor: pointer; transition: 0.2s; text-transform: uppercase;
         }
         button:hover { background: #bfff55; transform: scale(1.02); }
-        button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; }
+        button:disabled { background: #333; color: #888; cursor: wait; transform: none; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>Spokely</h1>
-    
-    <div id="loadingArea">
-        <p>Conectando...</p>
+    <div class="header">
+        <div class="level-info">
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#888;">
+                <span>NÍVEL <b id="lvlDisplay" style="color:#fff">1</b></span>
+                <span id="xpText">0 XP</span>
+            </div>
+            <div class="xp-track">
+                <div id="xpBar" class="xp-fill"></div>
+            </div>
+        </div>
     </div>
 
-    <div id="queueArea" style="display: none;">
-        <p class="status-text">SUA POSIÇÃO</p>
-        <div class="pos-number" id="posDisplay">--</div>
-        <p class="loader">Pessoas na frente: <span id="totalDisplay">--</span></p>
+    <div class="timer-box">
+        <div id="timerDisplay" class="timer-text">00:10</div>
+        <p id="statusMsg" class="status-msg">Sessão de Teste (10s)</p>
     </div>
 
-    <button id="btnJoin" style="display: none;">ENTRAR NA FILA</button>
+    <button id="btnAction">INICIAR FOCO</button>
 </div>
 
 <script>
-    // --- CONFIGURAÇÃO ---
-    const API_URL = "https://spokely-backend-1.onrender.com"; // URL do seu Backend
+    // --- CONFIG ---
+    const API_URL = "https://spokely-backend-1.onrender.com"; // SEU BACKEND
     
-    // ⚠️ SUBSTITUA PELO ID DO SEU USUÁRIO NO SUPABASE (User UID)
+    // ⚠️ SUBSTITUA PELO SEU ID AQUI (O MESMO QUE USOU ANTES)
     const userId = "81d8e5b7-edb2-4227-9fb2-8d4863b51414"; 
 
     // --- ELEMENTOS ---
-    const loadingArea = document.getElementById('loadingArea');
-    const queueArea = document.getElementById('queueArea');
-    const btnJoin = document.getElementById('btnJoin');
-    const posDisplay = document.getElementById('posDisplay');
-    const totalDisplay = document.getElementById('totalDisplay');
+    const btn = document.getElementById('btnAction');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const xpBar = document.getElementById('xpBar');
+    const lvlDisplay = document.getElementById('lvlDisplay');
+    const xpText = document.getElementById('xpText');
+    
+    let timeLeft = 10; 
+    let interval = null;
 
     // --- FUNÇÕES ---
 
-    // 1. Entrar na Fila
-    btnJoin.onclick = async () => {
-        btnJoin.disabled = true;
-        btnJoin.innerText = "Entrando...";
-        
-        try {
-            await fetch(`${API_URL}/join-queue`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId })
-            });
-            // Recarrega status imediatamente
-            checkQueue();
-        } catch (e) {
-            alert('Erro ao conectar no servidor.');
-            btnJoin.disabled = false;
-            btnJoin.innerText = "TENTAR NOVAMENTE";
-        }
+    btn.onclick = () => {
+        if (interval) return;
+
+        // Trava a tela
+        btn.disabled = true;
+        btn.innerText = "FOCADO... 🤫";
+        document.getElementById('statusMsg').innerText = "Não feche a aba!";
+
+        // Inicia contagem
+        interval = setInterval(() => {
+            timeLeft--;
+            timerDisplay.innerText = `00:${timeLeft < 10 ? '0'+timeLeft : timeLeft}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                finishSession();
+            }
+        }, 1000); // 1 segundo
     };
 
-    // 2. Checar Status (Polling)
-    async function checkQueue() {
+    async function finishSession() {
+        timerDisplay.innerText = "🎉";
+        
         try {
-            const response = await fetch(`${API_URL}/queue-status?user_id=${userId}`);
-            const data = await response.json();
+            // Avisa o backend que "trabalhou" 1 minuto (simulação)
+            const res = await fetch(`${API_URL}/complete-session`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: userId, minutes: 1 }) 
+            });
+            
+            const data = await res.json();
 
-            loadingArea.style.display = 'none';
+            if (data.success) {
+                // Atualiza Nível e XP na tela
+                lvlDisplay.innerText = data.new_level;
+                xpBar.style.width = `${data.current_xp}%`; // Assume que 100xp = 100% (simplificado)
+                xpText.innerText = `${data.current_xp} XP`;
 
-            if (data.in_queue) {
-                // MODO: DENTRO DA FILA
-                queueArea.style.display = 'block';
-                btnJoin.style.display = 'none';
+                // Feedback visual
+                btn.style.background = "#fff";
+                btn.innerText = `+${data.xp_earned} XP GANHO!`;
                 
-                posDisplay.innerText = `#${data.queue_pos}`;
-                // Total esperando - minha posição = gente na frente (cálculo simples)
-                totalDisplay.innerText = data.total_waiting - 1; 
+                if (data.leveled_up) alert("SUBIU DE NÍVEL! 🔥");
             } else {
-                // MODO: FORA DA FILA
-                queueArea.style.display = 'none';
-                btnJoin.style.display = 'block';
-                btnJoin.disabled = false;
-                btnJoin.innerText = "ENTRAR NA FILA";
+                alert("Erro: " + (data.error || "Desconhecido"));
             }
 
-        } catch (error) {
-            console.error(error);
-            // Não mostra erro na tela pro usuário não assustar, só tenta de novo depois
+        } catch (e) {
+            console.error(e);
+            btn.innerText = "ERRO AO SALVAR";
         }
-    }
 
-    // Roda a cada 5 segundos
-    setInterval(checkQueue, 5000);
-    // Roda assim que abre a página
-    checkQueue();
+        // Reseta tudo depois de 3 segundos pra testar de novo
+        setTimeout(() => {
+            timeLeft = 10;
+            timerDisplay.innerText = "00:10";
+            btn.innerText = "INICIAR FOCO";
+            btn.style.background = "#adff2f";
+            document.getElementById('statusMsg').innerText = "Sessão de Teste (10s)";
+            btn.disabled = false;
+            interval = null;
+        }, 3000);
+    }
 </script>
 
 </body>
