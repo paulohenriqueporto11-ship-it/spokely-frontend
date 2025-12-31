@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spokely - English Master</title>
+    <title>Spokely</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh; box-sizing: border-box; }
         .container { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
@@ -14,22 +14,28 @@
         .lvl-badge { font-weight: 800; color: #adff2f; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
         .xp-val { font-size: 0.9rem; font-weight: bold; color: #fff; }
         
-        /* A Barra de XP (Corrigida) */
-        .xp-track { width: 100%; height: 8px; background: #000; border-radius: 4px; overflow: hidden; position: relative; }
-        .xp-fill { height: 100%; background: #adff2f; width: 0%; transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 10px rgba(173, 255, 47, 0.5); }
+        /* Barra de XP com transição suave */
+        .xp-track { width: 100%; height: 10px; background: #000; border-radius: 5px; overflow: hidden; position: relative; border: 1px solid #333; }
+        .xp-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, #adff2f, #85cc00); 
+            width: 0%; 
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); 
+            box-shadow: 0 0 10px rgba(173, 255, 47, 0.3);
+        }
 
-        /* TELA DE SELEÇÃO DE DIFICULDADE */
+        /* MENU DE DIFICULDADE */
         .difficulty-screen { display: flex; flex-direction: column; gap: 10px; }
         .diff-btn { 
             padding: 20px; border-radius: 16px; border: 1px solid #333; background: #1f1f1f; 
             text-align: left; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center;
         }
-        .diff-btn:hover { border-color: #adff2f; transform: translateX(5px); }
+        .diff-btn:hover { border-color: #adff2f; transform: translateX(5px); background: #252525; }
         .diff-title { font-weight: bold; font-size: 1.1rem; color: #fff; display: block; }
-        .diff-desc { font-size: 0.8rem; color: #666; display: block; margin-top: 4px; }
+        .diff-desc { font-size: 0.8rem; color: #888; display: block; margin-top: 4px; }
         .diff-icon { font-size: 1.5rem; }
 
-        /* TELA DO QUIZ (Escondida no início) */
+        /* QUIZ */
         .quiz-screen { display: none; flex-direction: column; gap: 20px; }
         .quiz-card { background: #1f1f1f; padding: 2rem; border-radius: 20px; border: 1px solid #333; text-align: center; min-height: 300px; display: flex; flex-direction: column; justify-content: center; position: relative; }
         .quiz-question { font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 25px; line-height: 1.4; }
@@ -39,14 +45,17 @@
             background: #2a2a2a; border: 2px solid transparent; color: #ddd; 
             padding: 15px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.2s; 
         }
-        .btn-option:hover { background: #333; transform: scale(1.01); }
-        .btn-option.correct { background: #adff2f; color: #000; border-color: #adff2f; }
+        .btn-option:hover { background: #333; transform: scale(1.01); border-color: #555; }
+        .btn-option.correct { background: #adff2f; color: #000; border-color: #adff2f; font-weight: 800; }
         .btn-option.wrong { background: #ff4d4d; color: #fff; border-color: #ff4d4d; opacity: 0.6; }
 
         .btn-back { background: transparent; border: none; color: #666; cursor: pointer; text-decoration: underline; margin-top: 10px; }
 
-        /* Efeito de XP */
-        .float-xp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #adff2f; font-size: 4rem; font-weight: 900; opacity: 0; pointer-events: none; z-index: 10; text-shadow: 0 0 20px rgba(0,0,0,0.8); }
+        /* MENSAGEM DE CARREGANDO */
+        #loadingOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background:#0f0f0f; display:flex; justify-content:center; align-items:center; z-index:99; }
+        
+        /* Efeito XP */
+        .float-xp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #adff2f; font-size: 4rem; font-weight: 900; opacity: 0; pointer-events: none; z-index: 10; text-shadow: 0 0 20px rgba(0,0,0,1); }
         @keyframes floatUp { 
             0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; } 
             50% { transform: translate(-50%, -50px) scale(1.2); opacity: 1; } 
@@ -57,7 +66,11 @@
 </head>
 <body>
 
-<div class="container">
+<div id="loadingOverlay">
+    <p style="color:#adff2f; font-weight:bold; animation: blink 1s infinite;">CARREGANDO PERFIL...</p>
+</div>
+
+<div class="container" id="mainApp" style="opacity:0; transition: opacity 0.5s;">
     
     <div class="card-header">
         <div class="top-info">
@@ -67,41 +80,36 @@
         <div class="xp-track">
             <div id="xpBar" class="xp-fill"></div>
         </div>
+        <div style="text-align:right; font-size:0.7rem; color:#666; margin-top:5px;">
+            Próximo nível em: <span id="xpNext">100</span> XP
+        </div>
     </div>
 
     <div id="screenDifficulty" class="difficulty-screen">
-        <h2 style="color:#666; font-size:0.9rem; margin-left:5px; text-transform:uppercase;">Select Difficulty</h2>
+        <h2 style="color:#666; font-size:0.9rem; margin-left:5px; text-transform:uppercase; letter-spacing:1px;">Escolha a Dificuldade</h2>
         
         <div class="diff-btn" onclick="startQuiz('easy')">
             <div>
-                <span class="diff-title">Easy</span>
-                <span class="diff-desc">Básico para iniciantes (A1)</span>
+                <span class="diff-title">Easy (Básico)</span>
+                <span class="diff-desc">Palavras simples e frases curtas</span>
             </div>
             <span class="diff-icon">🌱</span>
         </div>
 
         <div class="diff-btn" onclick="startQuiz('normal')">
             <div>
-                <span class="diff-title">Normal</span>
-                <span class="diff-desc">Frases do dia a dia (A2-B1)</span>
+                <span class="diff-title">Normal (Intermediário)</span>
+                <span class="diff-desc">Gramática e conversação</span>
             </div>
             <span class="diff-icon">🔥</span>
         </div>
 
         <div class="diff-btn" onclick="startQuiz('hard')">
             <div>
-                <span class="diff-title">Hard</span>
-                <span class="diff-desc">Gramática complexa (B2)</span>
+                <span class="diff-title">Hard (Avançado)</span>
+                <span class="diff-desc">Expressões complexas</span>
             </div>
             <span class="diff-icon">💀</span>
-        </div>
-
-        <div class="diff-btn" onclick="startQuiz('fluent')">
-            <div>
-                <span class="diff-title">Fluent</span>
-                <span class="diff-desc">Slangs & Business (C1+)</span>
-            </div>
-            <span class="diff-icon">💎</span>
         </div>
     </div>
 
@@ -112,7 +120,7 @@
             <p class="quiz-question" id="qText">Carregando...</p>
             <div class="quiz-options" id="qOptions"></div>
         </div>
-        <button class="btn-back" onclick="showDifficultyScreen()">Trocar Dificuldade</button>
+        <button class="btn-back" onclick="showDifficultyScreen()">← Voltar para o Menu</button>
     </div>
 
 </div>
@@ -120,66 +128,72 @@
 <script>
     const API_URL = "https://spokely-backend-1.onrender.com"; // SEU BACKEND
     
-    // ⚠️ COLOQUE SEU ID AQUI
+    // ⚠️ SUBSTITUA PELO SEU ID
     const userId = "COLE_SEU_UUID_AQUI"; 
 
-    // --- BANCO DE DADOS DE PERGUNTAS (MVP) ---
-    // No futuro, isso virá do Supabase
+    // Perguntas (MVP)
     const questionBank = {
         easy: [
-            { text: "Como se diz 'Obrigado'?", options: ["Please", "Hello", "Thanks", "Sorry"], correct: 2, xp: 10 },
-            { text: "Complete: I ___ happy.", options: ["is", "am", "are", "be"], correct: 1, xp: 10 },
-            { text: "Traduza 'Dog'", options: ["Gato", "Pássaro", "Cachorro", "Peixe"], correct: 2, xp: 10 },
-            { text: "Qual cor é 'Red'?", options: ["Azul", "Verde", "Vermelho", "Amarelo"], correct: 2, xp: 10 }
+            { text: "Traduza: 'Good Morning'", options: ["Boa noite", "Boa tarde", "Bom dia", "Olá"], correct: 2, xp: 15 },
+            { text: "O que é 'Apple'?", options: ["Uva", "Maçã", "Pera", "Banana"], correct: 1, xp: 15 },
+            { text: "Complete: She ___ happy.", options: ["are", "is", "am", "be"], correct: 1, xp: 15 }
         ],
         normal: [
-            { text: "Ontem eu ___ (to go) ao parque.", options: ["go", "goed", "went", "gone"], correct: 2, xp: 20 },
-            { text: "Traduza: 'I need to buy water'", options: ["Eu preciso beber água", "Eu preciso comprar água", "Eu quero água", "Eu comprei água"], correct: 1, xp: 20 },
-            { text: "Qual o contrário de 'Always'?", options: ["Never", "Sometimes", "Forever", "Maybe"], correct: 0, xp: 20 },
-            { text: "She ___ playing soccer now.", options: ["are", "is", "am", "does"], correct: 1, xp: 20 }
+            { text: "Passado de 'Go':", options: ["Gone", "Goed", "Went", "Gowing"], correct: 2, xp: 25 },
+            { text: "Traduza: 'I'm starving'", options: ["Estou com sede", "Estou morrendo de fome", "Estou cansado", "Estou feliz"], correct: 1, xp: 25 }
         ],
         hard: [
-            { text: "If I ___ rich, I would travel.", options: ["am", "was", "were", "been"], correct: 2, xp: 35 },
-            { text: "I haven't seen him ___ 2010.", options: ["since", "for", "ago", "until"], correct: 0, xp: 35 },
-            { text: "Significado de 'Give up':", options: ["Dar algo", "Desistir", "Levantar", "Começar"], correct: 1, xp: 35 }
-        ],
-        fluent: [
-            { text: "O que significa a expressão 'Break a leg'?", options: ["Quebrar a perna", "Boa sorte", "Se machucar", "Dançar muito"], correct: 1, xp: 50 },
-            { text: "Sinônimo sofisticado de 'Happy':", options: ["Sad", "Elated", "Bored", "Angry"], correct: 1, xp: 50 },
-            { text: "Complete: By the time you arrive, I ___ finished.", options: ["will have", "would have", "had", "will had"], correct: 0, xp: 50 }
+            { text: "Significado de 'Give up':", options: ["Levantar", "Desistir", "Começar", "Doar"], correct: 1, xp: 40 },
+            { text: "Qual a forma correta?", options: ["I have went", "I have gone", "I has gone", "I did gone"], correct: 1, xp: 40 }
         ]
     };
 
     let currentDifficulty = 'easy';
     let currentQ = null;
 
-    // Elementos
-    const screenDiff = document.getElementById('screenDifficulty');
-    const screenQuiz = document.getElementById('screenQuiz');
-    const lvlDisplay = document.getElementById('lvlDisplay');
-    const xpText = document.getElementById('xpText');
-    const xpBar = document.getElementById('xpBar');
-    const floatXp = document.getElementById('floatXp');
+    // --- INICIALIZAÇÃO ---
+    // Assim que a janela carrega, chama o perfil
+    window.onload = async () => {
+        await loadProfile();
+    };
 
-    // Inicializa carregando perfil
-    getProfile();
+    async function loadProfile() {
+        try {
+            // Chama a nova rota /get-profile
+            const res = await fetch(`${API_URL}/get-profile?user_id=${userId}`);
+            const data = await res.json();
+            
+            if (data.level !== undefined) {
+                updateStats({ 
+                    new_level: data.level, 
+                    current_xp: data.xp 
+                });
+                
+                // Tira o loading e mostra o app
+                document.getElementById('loadingOverlay').style.display = 'none';
+                document.getElementById('mainApp').style.opacity = '1';
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao carregar perfil. O Backend tá ligado?");
+        }
+    }
 
+    // --- LÓGICA DO QUIZ ---
     function showDifficultyScreen() {
-        screenQuiz.style.display = 'none';
-        screenDiff.style.display = 'flex';
+        document.getElementById('screenQuiz').style.display = 'none';
+        document.getElementById('screenDifficulty').style.display = 'flex';
     }
 
     function startQuiz(difficulty) {
         currentDifficulty = difficulty;
-        screenDiff.style.display = 'none';
-        screenQuiz.style.display = 'flex';
+        document.getElementById('screenDifficulty').style.display = 'none';
+        document.getElementById('screenQuiz').style.display = 'flex';
         loadNextQuestion();
     }
 
     function loadNextQuestion() {
-        // Pega perguntas do nível escolhido
         const list = questionBank[currentDifficulty];
-        // Sorteia uma (No futuro, filtraremos as já respondidas)
         currentQ = list[Math.floor(Math.random() * list.length)];
         
         document.getElementById('qText').innerText = currentQ.text;
@@ -197,23 +211,22 @@
 
     async function checkAnswer(btnElement, index) {
         const allBtns = document.querySelectorAll('.btn-option');
-        allBtns.forEach(b => b.disabled = true); // Trava cliques
+        allBtns.forEach(b => b.disabled = true);
 
         if (index === currentQ.correct) {
-            // ACERTOU
             btnElement.classList.add('correct');
             showXpAnimation(currentQ.xp);
             await sendXpToBackend(currentQ.xp);
         } else {
-            // ERROU
             btnElement.classList.add('wrong');
-            allBtns[currentQ.correct].classList.add('correct'); // Mostra a certa
+            allBtns[currentQ.correct].classList.add('correct');
         }
 
         setTimeout(() => loadNextQuestion(), 1500);
     }
 
     function showXpAnimation(amount) {
+        const floatXp = document.getElementById('floatXp');
         floatXp.innerText = `+${amount} XP`;
         floatXp.style.animation = 'none';
         floatXp.offsetHeight; 
@@ -225,33 +238,32 @@
             const res = await fetch(`${API_URL}/add-xp`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: userId, xp_amount: amount, source: 'quiz' }) 
+                body: JSON.stringify({ user_id: userId, xp_amount: amount }) 
             });
             const data = await res.json();
             if(data.success) updateStats(data);
         } catch(e) { console.error(e); }
     }
 
-    // Busca dados iniciais (pra barra não começar vazia se o cara já tem XP)
-    async function getProfile() {
-        // Truque: Manda 0 XP só pra receber o status atual
-        await sendXpToBackend(0);
-    }
-
     function updateStats(data) {
-        lvlDisplay.innerText = data.new_level;
-        xpText.innerText = data.current_xp; // Total de XP Acumulado
+        document.getElementById('lvlDisplay').innerText = data.new_level;
+        document.getElementById('xpText').innerText = data.current_xp;
 
-        // LÓGICA DA BARRA:
-        // Vamos supor que cada 100 XP sobe um nível.
-        // A barra deve mostrar quanto falta pro próximo.
-        // Ex: 150 XP -> Nível 2 (Sobra 50 XP) -> Barra em 50%
-        const xpForNextLevel = 100; 
-        const progress = data.current_xp % xpForNextLevel;
+        // MATEMÁTICA DA BARRA (Supondo 100 XP por nível)
+        const xpPorNivel = 100;
+        // Pega só o XP "sobra" do nível atual
+        const progressoAtual = data.current_xp % xpPorNivel;
         
-        xpBar.style.width = `${progress}%`;
+        // Exemplo: Se tenho 150 XP. Nível 2 (Sobra 50). Barra = 50%
+        document.getElementById('xpBar').style.width = `${progressoAtual}%`;
+        document.getElementById('xpNext').innerText = xpPorNivel - progressoAtual;
     }
 
 </script>
+
+<style>
+@keyframes blink { 0% {opacity:1} 50% {opacity:0.5} 100% {opacity:1} }
+</style>
+
 </body>
 </html>
