@@ -5,63 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fila Spokely</title>
     <style>
-        body { font-family: sans-serif; background: #111; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #222; padding: 2rem; border-radius: 12px; text-align: center; width: 300px; border: 1px solid #333; }
-        h1 { margin-top: 0; color: #adff2f; }
-        .status { font-size: 1.2rem; margin: 20px 0; }
-        .pos { font-size: 3rem; font-weight: bold; color: #fff; }
-        .loader { color: #888; font-size: 0.9rem; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1f1f1f; padding: 2.5rem; border-radius: 16px; text-align: center; width: 320px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { margin-top: 0; color: #adff2f; letter-spacing: -1px; }
+        .status-text { color: #888; font-size: 0.9rem; margin-bottom: 5px; }
+        .pos-number { font-size: 4rem; font-weight: 800; color: #fff; line-height: 1; margin: 10px 0; }
+        .loader { font-size: 0.8rem; color: #666; }
+        
+        button {
+            margin-top: 20px; padding: 12px 24px; width: 100%;
+            background: #adff2f; color: #000; font-weight: bold; font-size: 1rem;
+            border: none; border-radius: 8px; cursor: pointer; transition: 0.2s;
+        }
+        button:hover { background: #bfff55; transform: scale(1.02); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h1>Spokely</h1>
-    <div id="content">
-        <p>Carregando fila...</p>
+    
+    <div id="loadingArea">
+        <p>Conectando...</p>
     </div>
+
+    <div id="queueArea" style="display: none;">
+        <p class="status-text">SUA POSIÇÃO</p>
+        <div class="pos-number" id="posDisplay">--</div>
+        <p class="loader">Pessoas na frente: <span id="totalDisplay">--</span></p>
+    </div>
+
+    <button id="btnJoin" style="display: none;">ENTRAR NA FILA</button>
 </div>
 
 <script>
-    // ⚠️ TROQUE PELA URL DO SEU BACKEND NO RENDER (sem a barra / no final)
-    const API_URL = "https://spokely-backend-1.onrender.com"; 
+    // --- CONFIGURAÇÃO ---
+    const API_URL = "https://zeniith-backend.onrender.com"; // URL do seu Backend
+    
+    // ⚠️ SUBSTITUA PELO ID DO SEU USUÁRIO NO SUPABASE (User UID)
+    const userId = "COLE_SEU_UUID_AQUI"; 
 
-    // Gera um ID falso só pra testar (num app real viria do Login)
-    let userId = localStorage.getItem('spokely_test_id');
-    if (!userId) {
-        userId = crypto.randomUUID();
-        localStorage.setItem('spokely_test_id', userId);
-    }
+    // --- ELEMENTOS ---
+    const loadingArea = document.getElementById('loadingArea');
+    const queueArea = document.getElementById('queueArea');
+    const btnJoin = document.getElementById('btnJoin');
+    const posDisplay = document.getElementById('posDisplay');
+    const totalDisplay = document.getElementById('totalDisplay');
 
-    const contentDiv = document.getElementById('content');
+    // --- FUNÇÕES ---
 
+    // 1. Entrar na Fila
+    btnJoin.onclick = async () => {
+        btnJoin.disabled = true;
+        btnJoin.innerText = "Entrando...";
+        
+        try {
+            await fetch(`${API_URL}/join-queue`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId })
+            });
+            // Recarrega status imediatamente
+            checkQueue();
+        } catch (e) {
+            alert('Erro ao conectar no servidor.');
+            btnJoin.disabled = false;
+            btnJoin.innerText = "TENTAR NOVAMENTE";
+        }
+    };
+
+    // 2. Checar Status (Polling)
     async function checkQueue() {
         try {
-            // Chama a rota que criamos: /queue-status?user_id=...
             const response = await fetch(`${API_URL}/queue-status?user_id=${userId}`);
             const data = await response.json();
 
-            if (data.queue_pos) {
-                contentDiv.innerHTML = `
-                    <p class="status">Sua posição:</p>
-                    <div class="pos">#${data.queue_pos}</div>
-                    <p class="loader">Total na fila: ${data.total_waiting}</p>
-                `;
+            loadingArea.style.display = 'none';
+
+            if (data.in_queue) {
+                // MODO: DENTRO DA FILA
+                queueArea.style.display = 'block';
+                btnJoin.style.display = 'none';
+                
+                posDisplay.innerText = `#${data.queue_pos}`;
+                // Total esperando - minha posição = gente na frente (cálculo simples)
+                totalDisplay.innerText = data.total_waiting; 
             } else {
-                // Se não retornou posição, provavelmente o usuário não tá na fila (tabela vazia)
-                // Vamos simular que ele entrou agora (Backend real teria botão "Entrar na Fila")
-                contentDiv.innerHTML = `<p>Você não está na fila.<br> (Crie lógica de Insert no Backend)</p>`;
+                // MODO: FORA DA FILA
+                queueArea.style.display = 'none';
+                btnJoin.style.display = 'block';
+                btnJoin.disabled = false;
+                btnJoin.innerText = "ENTRAR NA FILA";
             }
 
         } catch (error) {
             console.error(error);
-            contentDiv.innerHTML = `<p style="color:red">Erro ao conectar no servidor.</p>`;
+            // Não mostra erro na tela pro usuário não assustar, só tenta de novo depois
         }
     }
 
-    // Polling: Atualiza a cada 5 segundos
+    // Roda a cada 5 segundos
     setInterval(checkQueue, 5000);
-    checkQueue(); // Chama a primeira vez
+    // Roda assim que abre a página
+    checkQueue();
 </script>
 
 </body>
