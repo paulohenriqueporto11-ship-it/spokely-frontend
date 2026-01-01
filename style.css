@@ -1,62 +1,50 @@
 :root { --primary: #adff2f; --bg: #0f0f0f; --card: #1f1f1f; --text: #eee; --danger: #ff4d4d; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 
-body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
 
 /* HEADER */
-header { height: 60px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: var(--card); z-index: 10; }
-.logo { font-weight: 900; letter-spacing: -1px; color: #fff; }
+header { height: 60px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: var(--card); }
+.logo { font-weight: 900; letter-spacing: -1px; color: #fff; text-decoration: none; }
 .stats { display: flex; gap: 10px; }
 .badge { background: #333; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 4px; border: 1px solid #444; }
 .icon-heart { color: var(--danger); font-size: 1rem; }
 .icon-xp { color: var(--primary); font-size: 1rem; }
 
-/* MAIN AREAS */
-main { flex: 1; position: relative; overflow: hidden; }
-section { position: absolute; top:0; left:0; width:100%; height:100%; display: none; flex-direction: column; overflow-y: auto; background: var(--bg); }
-section.active { display: flex; }
+/* CONTENT AREA */
+main { flex: 1; overflow-y: auto; position: relative; }
 
-/* HOME */
-#area-home { padding: 20px; }
-.welcome-card { background: linear-gradient(135deg, #2a2a2a, #1a1a1a); padding: 25px; border-radius: 20px; border: 1px solid #333; text-align: center; margin-bottom: 20px; }
-.welcome-card h1 { margin: 0 0 10px 0; color: var(--primary); }
-.btn-play-big { background: var(--primary); color: #000; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 800; font-size: 1rem; margin-top: 15px; cursor: pointer; box-shadow: 0 4px 15px rgba(173, 255, 47, 0.4); }
-.daily-info { background: var(--card); padding: 20px; border-radius: 15px; }
+/* NAV BAR */
+.bottom-nav { height: 65px; border-top: 1px solid #333; background: var(--card); display: flex; justify-content: space-around; align-items: center; }
+.nav-link { text-decoration: none; color: #666; display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; gap: 4px; width: 60px; }
+.nav-link.active { color: var(--primary); }
 
-/* MAPA */
-#area-map { justify-content: center; background: #111; }
-.map-scroll { display: flex; align-items: center; height: 100%; overflow-x: auto; padding: 0 50vw 0 50px; position: relative; }
+/* COMPONENTES GERAIS */
+.btn-primary { background: var(--primary); color: #000; border: none; padding: 15px 30px; border-radius: 50px; font-weight: 800; font-size: 1rem; cursor: pointer; display: inline-block; text-decoration: none; }
+#loading { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; color: var(--primary); z-index: 200; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+
+/* ESTILOS ESPECÍFICOS DO MAPA */
+.map-scroll { display: flex; align-items: center; height: 100%; overflow-x: auto; padding: 0 50vw 0 50px; position: relative; background: #111; }
 .map-scroll::before { content: ''; position: absolute; width: 100%; height: 6px; background: #333; left: 0; z-index: 0; }
-
-.node { width: 70px; height: 70px; background: #333; border: 5px solid #555; border-radius: 50%; margin-right: 40px; position: relative; z-index: 2; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem; color: #777; flex-shrink: 0; transition: 0.3s; }
+.node { width: 70px; height: 70px; background: #333; border: 5px solid #555; border-radius: 50%; margin-right: 40px; position: relative; z-index: 2; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem; color: #777; flex-shrink: 0; }
 .node.done { background: var(--primary); border-color: var(--primary); color: #000; }
 .node.curr { background: #fff; border-color: #fff; color: #000; transform: scale(1.15); box-shadow: 0 0 25px rgba(255,255,255,0.3); z-index: 3; }
 .node.locked { opacity: 0.5; pointer-events: none; }
-
 .avatar { width: 60px; height: 60px; position: absolute; top: -65px; left: 50%; transform: translateX(-50%); background-image: url('https://api.dicebear.com/7.x/bottts/svg?seed=Spokely'); background-size: cover; animation: jump 1s infinite alternate; pointer-events: none; }
 @keyframes jump { from { top: -70px; } to { top: -60px; } }
 
-/* PERFIL */
-#area-profile { padding: 30px 20px; align-items: center; }
-.avatar-lg { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--primary); margin-bottom: 15px; }
-.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-top: 20px; }
-.stat-box { background: var(--card); padding: 15px; border-radius: 15px; text-align: center; display: flex; flex-direction: column; border: 1px solid #333; }
-
-/* QUIZ OVERLAY */
+/* QUIZ */
 .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 100; display: none; justify-content: center; padding: 20px; }
 .quiz-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; height: 100%; }
 .quiz-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; margin-top: 10px; }
 .progress-bar { flex: 1; height: 10px; background: #333; margin: 0 15px; border-radius: 5px; overflow: hidden; }
 #lessonProgress { width: 0%; height: 100%; background: var(--primary); transition: width 0.3s; }
 .quiz-content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.options-grid { display: flex; flex-direction: column; gap: 12px; }
-.btn-opt { padding: 18px; background: var(--card); border: 2px solid transparent; color: #fff; border-radius: 12px; font-size: 1rem; font-weight: 600; text-align: left; cursor: pointer; }
+.btn-opt { padding: 18px; background: var(--card); border: 2px solid transparent; color: #fff; border-radius: 12px; font-size: 1rem; font-weight: 600; text-align: left; cursor: pointer; margin-bottom: 10px; width: 100%; }
 .btn-opt.correct { background: var(--primary); color: #000; border-color: var(--primary); }
 .btn-opt.wrong { background: var(--danger); border-color: var(--danger); }
 
-/* NAV */
-.bottom-nav { height: 65px; border-top: 1px solid #333; background: var(--card); display: flex; justify-content: space-around; align-items: center; z-index: 50; }
-.nav-btn { background: none; border: none; color: #666; display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; gap: 4px; width: 60px; cursor: pointer; }
-.nav-btn.active { color: var(--primary); }
-
-#loading { position: fixed; top:0; left:0; width:100%; height:100%; background: #000; color: var(--primary); z-index: 200; display: flex; justify-content: center; align-items: center; flex-direction: column; font-weight: bold; }
+/* HOME & PROFILE */
+.welcome-card { background: linear-gradient(135deg, #2a2a2a, #1a1a1a); padding: 25px; border-radius: 20px; border: 1px solid #333; text-align: center; margin: 20px; }
+.profile-header { padding: 30px 20px; text-align: center; }
+.avatar-lg { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--primary); margin-bottom: 15px; }
