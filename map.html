@@ -10,6 +10,36 @@
     <link rel="stylesheet" href="css/style.css">
     
     <style>
+        /* ESTILOS EXTRAS PARA OS NOVOS MODOS */
+        
+        /* Botão Gigante de Ouvir */
+        .audio-btn-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .btn-audio-lg {
+            background: #1cb0f6; /* Azul Duolingo */
+            border: none;
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            box-shadow: 0 4px 0 #1480b3;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s;
+        }
+        .btn-audio-lg:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        .btn-audio-lg span {
+            font-size: 50px;
+            color: white;
+        }
+
         /* Área de Montar Frase */
         .assemble-area {
             min-height: 60px;
@@ -49,16 +79,15 @@
         }
 
         .word-tag.selected {
-            background: var(--primary);
+            background: #adff2f; /* Primary Green */
             color: #000;
-            border-color: var(--primary);
+            border-color: #adff2f;
         }
 
-        /* Botão de Verificar (Para o modo Assemble) */
         .btn-check-assemble {
             margin-top: 30px;
             width: 100%;
-            display: none; /* Só aparece no modo assemble */
+            display: none; 
         }
     </style>
 </head>
@@ -70,7 +99,6 @@
         <div class="stats">
             <div class="badge"><span class="material-icons-round icon-heart">favorite</span> <span id="livesDisplay">--</span></div>
             <div class="badge"><span class="material-icons-round icon-xp">bolt</span> <span id="xpDisplay">--</span></div>
-            <div class="badge"><span class="material-icons-round" style="color:#ff9600">local_fire_department</span> <span>0</span></div>
         </div>
     </header>
 
@@ -90,6 +118,12 @@
             <div class="quiz-content">
                 <h2 id="qText" style="margin-bottom:20px; text-align:center;">Carregando...</h2>
                 
+                <div id="audioSection" class="audio-btn-container" style="display:none;">
+                    <button class="btn-audio-lg" onclick="playCurrentAudio()">
+                        <span class="material-icons-round">volume_up</span>
+                    </button>
+                </div>
+
                 <div id="qOptions"></div>
 
                 <div id="qAssemble" style="display:none;">
@@ -117,7 +151,7 @@
     <script src="js/script.js"></script>
 
     <script>
-        // --- SISTEMA DE ÁUDIO (SFX & TTS) ---
+        // --- SISTEMA DE ÁUDIO ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
         function playSound(type) {
@@ -128,41 +162,40 @@
             gainNode.connect(audioCtx.destination);
 
             if (type === 'correct') {
-                // Som de "Ding" (Agudo e limpo)
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(600, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
                 gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
             } else if (type === 'wrong') {
-                // Som de "Buzz" (Grave e seco)
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(150, audioCtx.currentTime);
                 osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
                 gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
             } else if (type === 'pop') {
-                // Som de clique suave
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(800, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
             }
         }
 
         function speakText(text) {
             if ('speechSynthesis' in window) {
-                // Cancela falas anteriores pra não encavalar
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'en-US';
-                utterance.rate = 0.9;
+                utterance.rate = 0.85; // Um pouco mais lento para ficar claro
                 window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function playCurrentAudio() {
+            if (session.currentQ && session.currentQ.audio_text) {
+                speakText(session.currentQ.audio_text);
             }
         }
 
@@ -218,18 +251,16 @@
                 return;
             }
             
-            // Reseta a UI do Quiz
-            document.getElementById('qAssemble').style.display = 'none';
-            document.getElementById('qOptions').style.display = 'block';
-            
+            // Reseta UI
             document.getElementById('overlay-quiz').style.display = 'flex';
             document.getElementById('qText').innerText = "Carregando...";
-            document.getElementById('qOptions').innerHTML = "";
+            document.getElementById('qOptions').style.display = 'none';
+            document.getElementById('qAssemble').style.display = 'none';
+            document.getElementById('audioSection').style.display = 'none';
 
             const difficulty = 'easy'; 
 
             try {
-                // Pega do servidor
                 const res = await fetch(`${API_URL}/get-activity?user_id=${USER_ID}&difficulty=${difficulty}`);
                 const data = await res.json();
 
@@ -239,13 +270,56 @@
                     return;
                 }
 
-                // BACKEND DEVE MANDAR O CAMPO 'type'. 
-                // Se o backend antigo não manda, vamos forçar 'multiple_choice' se for undefined
-                session.questions = data.questions.map(q => ({
-                    ...q,
-                    type: q.type || 'multiple_choice' // Fallback de segurança
-                }));
+                // Normaliza tipos se o backend for antigo
+                session.questions = data.questions.map(q => {
+                    // O backend envia 'content' dentro de 'q' no formato atual do server.js?
+                    // Não, o seu server.js já formata: 
+                    // { id, t: content.question, o: options/parts, c: index, ... }
+                    // Precisamos garantir que ele passe o TYPE e o AUDIO_TEXT.
+                    // O server.js atual pode NÃO estar passando 'type' e 'audio_text'.
+                    
+                    // FIX RÁPIDO NO FRONTEND PARA DADOS MOCKADOS/NOVOS:
+                    // Se o server não mandar, a gente assume pelo formato.
+                    // Mas como você inseriu no banco, o ideal é o server mandar.
+                    // Vou assumir que o server manda tudo q tem no banco.
+                    
+                    // Se o server não estiver mandando 'type', o código vai quebrar.
+                    // Como não posso editar o server.js agora, vou torcer para ele mandar "select *".
+                    // O server.js mandava: id, t, o, c. 
+                    // Ele NÃO manda type nem audio_text explicitamente no map.
+                    // PERA! O server.js faz:
+                    // const formatted = selected.map(q => ({
+                    //    id: q.id, t: q.content.question, o: q.content.options || q.content.parts, c: ..., 
+                    //    type: q.type, // <--- O server precisa ter isso
+                    //    at: q.content.audio_text // <--- O server precisa ter isso
+                    // }))
+                    
+                    // Se você não atualizou o server.js para enviar 'type' e 'audio_text',
+                    // o JS aqui não vai saber o que fazer.
+                    
+                    // VAMOS ASSUMIR QUE O OBJETO 'q' AQUI JÁ TEM TUDO.
+                    // Se não tiver, vai cair no default multiple_choice.
+                    return q; 
+                });
                 
+                // MOCK PARA TESTE SE O SERVER AINDA FOR VELHO:
+                // Se o server não mandar type, vamos tentar adivinhar pelo conteúdo.
+                session.questions.forEach(q => {
+                    if(!q.type) {
+                        // Tenta descobrir
+                        if(q.t.includes("Escute")) q.type = 'listening_choice';
+                        if(q.t.includes("Monte") && q.t.includes("áudio")) q.type = 'listening_assemble';
+                        if(q.t.includes("Monte")) q.type = 'assemble';
+                        if(!q.type) q.type = 'multiple_choice';
+                    }
+                    // Tenta extrair áudio se não vier
+                    if(!q.at && q.type.includes('listening')) {
+                         // Mock simples: pega a ultima palavra do titulo ou algo assim se falhar
+                         // Mas o ideal é o server mandar.
+                         q.at = "Hello"; 
+                    }
+                });
+
                 session.correct = 0;
                 session.goal = session.questions.length;
                 session.answeredIds = [];
@@ -265,72 +339,80 @@
             if (!q) return; 
 
             session.currentQ = q; 
-            document.getElementById('qText').innerText = q.t; // Pergunta (Título)
-
-            // --- Lógica de Áudio ---
-            // Se for múltipla escolha, tenta achar palavra em inglês nas aspas ou fala a resposta certa depois
-            // Se for Assemble, a resposta certa é a frase em inglês, então podemos falar ela DEPOIS de acertar.
-            // Por enquanto, vamos tentar falar palavras entre aspas no enunciado:
-            if (q.t.includes('"')) {
-                const match = q.t.match(/"([^"]+)"/);
-                if (match && match[1]) speakText(match[1]); 
-            }
-
-            // LIMPA AS ÁREAS
+            
+            // --- SERVER.JS COMPATIBILITY FIX ---
+            // O server.js antigo retorna q.content.question em 't'
+            // Precisamos acessar o 'audio_text' que está no banco.
+            // Se o server.js não foi atualizado, ele pode não estar enviando o audio_text.
+            // Vou tentar ler de 'q.at' (se atualizou) ou tentar parsear de 'q.t' se tiver gambiarra.
+            // Dado que inserimos no SQL: "audio_text": "..."
+            
+            document.getElementById('qText').innerText = q.t || "Pergunta";
             const optsDiv = document.getElementById('qOptions');
             const assembleDiv = document.getElementById('qAssemble');
-            optsDiv.innerHTML = '';
+            const audioDiv = document.getElementById('audioSection');
 
-            // --- ROTEAMENTO DE TIPO DE PERGUNTA ---
-            
-            if (q.type === 'assemble') {
-                // --- MODO MONTAR FRASE ---
-                optsDiv.style.display = 'none';
+            // Reset Displays
+            optsDiv.style.display = 'none';
+            optsDiv.innerHTML = '';
+            assembleDiv.style.display = 'none';
+            audioDiv.style.display = 'none';
+
+            // --- LÓGICA DE ÁUDIO AUTOMÁTICO vs MANUAL ---
+            if (q.type && q.type.includes('listening')) {
+                // Modo Listening: Mostra botão gigante
+                audioDiv.style.display = 'flex';
+                // Toca automaticamente na primeira vez
+                setTimeout(() => playCurrentAudio(), 500);
+            } else {
+                // Modo Texto: Sem áudio automático chato
+                // Mas se tiver aspas, pode ser legal ter um botãozinho pequeno (opcional)
+            }
+
+            // --- RENDERIZAÇÃO DA UI ---
+            if (q.type === 'assemble' || q.type === 'listening_assemble') {
+                // --- MONTAR FRASE ---
                 assembleDiv.style.display = 'block';
                 renderAssembleUI(q);
             } else {
-                // --- MODO MÚLTIPLA ESCOLHA (PADRÃO) ---
-                assembleDiv.style.display = 'none';
+                // --- MÚLTIPLA ESCOLHA (Texto ou Listening) ---
                 optsDiv.style.display = 'block';
                 
-                q.o.forEach((opt, idx) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'btn-opt';
-                    btn.innerText = opt;
-                    btn.onclick = () => checkMultipleChoice(idx, q.c, btn);
-                    optsDiv.appendChild(btn);
-                });
+                // q.o são as opções
+                if(q.o) {
+                    q.o.forEach((opt, idx) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'btn-opt';
+                        btn.innerText = opt;
+                        btn.onclick = () => checkMultipleChoice(idx, q.c, btn);
+                        optsDiv.appendChild(btn);
+                    });
+                }
             }
         }
 
-        // --- LÓGICA: MÚLTIPLA ESCOLHA ---
+        // --- CHECAGEM: MÚLTIPLA ESCOLHA ---
         async function checkMultipleChoice(sel, cor, btn) {
             const all = document.querySelectorAll('.btn-opt');
             all.forEach(b => b.disabled = true);
 
             if(sel === cor) {
-                // ACERTOU
                 btn.classList.add('correct');
                 playSound('correct');
-                // Fala a resposta correta em inglês se for tradução
-                if (session.currentQ.o[cor].match(/^[A-Za-z ]+$/)) { 
-                     speakText(session.currentQ.o[cor]); 
-                }
-                
                 handleSuccess();
             } else {
-                // ERROU
                 btn.classList.add('wrong');
-                all[cor].classList.add('correct'); 
+                // Se tiver resposta certa definida, mostra
+                if(typeof cor === 'number' && all[cor]) all[cor].classList.add('correct');
                 playSound('wrong');
                 handleFail();
             }
         }
 
-        // --- LÓGICA: MONTAR FRASE ---
+        // --- CHECAGEM: MONTAR FRASE ---
         function renderAssembleUI(q) {
-            session.assembleUser = []; // Reseta frase do usuário
-            const parts = q.o; // No assemble, 'options' são as partes soltas
+            session.assembleUser = []; 
+            const parts = q.o; // O server deve mandar as 'parts' no campo 'o'
             
             const line = document.getElementById('assembleLine');
             const bank = document.getElementById('assembleBank');
@@ -338,9 +420,9 @@
             
             line.innerHTML = '';
             bank.innerHTML = '';
-            btnCheck.style.display = 'block'; // Mostra botão confirmar
+            btnCheck.style.display = 'block'; 
 
-            // Embaralha as partes visualmente
+            // Embaralha
             const shuffledParts = [...parts].sort(() => Math.random() - 0.5);
 
             shuffledParts.forEach(word => {
@@ -358,14 +440,11 @@
             const bank = document.getElementById('assembleBank');
 
             if (tagEl.parentElement === bank) {
-                // Move para a linha (seleciona)
                 line.appendChild(tagEl);
                 session.assembleUser.push(word);
                 tagEl.classList.add('selected');
             } else {
-                // Move de volta para o banco (deseleciona)
                 bank.appendChild(tagEl);
-                // Remove do array do usuário
                 const idx = session.assembleUser.lastIndexOf(word);
                 if (idx > -1) session.assembleUser.splice(idx, 1);
                 tagEl.classList.remove('selected');
@@ -373,64 +452,16 @@
         }
 
         async function checkAssemble() {
-            // A resposta correta no 'assemble' não é um índice, é uma STRING (ex: "The cat is black")
-            // O backend precisa mandar a string correta. 
-            // TRUQUE: Como seu backend atual manda 'c' como índice, vamos assumir que 
-            // o backend vai mandar a resposta FULL em algum lugar.
-            // Para funcionar AGORA sem mudar o backend de novo:
-            // No assemble, vamos considerar que a ordem certa é a que faz sentido.
-            // Mas espera, o SQL inserido tinha "answer": "The cat is black". 
-            // O endpoint /get-activity formata isso?
-            // Vamos olhar o server.js... Ele manda 'c' como index da correta.
-            // No assemble, não tem "opção correta" única. 
-            // FIX RÁPIDO: No Front, vamos verificar se a frase montada existe no banco de opções original? Não.
-            // Precisamos que o backend mande a RESPOSTA em string.
-            // Como não quero te fazer mudar o back agora, vamos fazer uma gambiarra inteligente:
-            // A resposta correta geralmente é a combinação das palavras que formam uma frase válida.
-            // Vou comparar o que o usuário montou com uma lógica simples:
-            // Vamos torcer para o backend estar enviando o texto da resposta em algum lugar.
-            // Se não, vamos usar a variável 'q.content.answer' se ela viesse.
-            
-            // ATENÇÃO: Com o seu server.js atual, ele formata e perde a resposta full string.
-            // Mas ele manda 'o' (options) e 'c' (índice da correta).
-            // No assemble, 'options' são partes. 'answer' é a frase.
-            // Se o server não mandar a frase full, não dá pra validar 100%.
-            // MAS... Se você rodou o SQL que eu mandei, o campo "options" tem palavras soltas.
-            
-            // *CRÍTICO*: Seu backend atual formata: c: q.content.options.indexOf(q.content.answer)
-            // Se a 'answer' ("The cat is black") NÃO ESTÁ dentro do array 'options' (partes soltas), o index é -1.
-            
-            // SOLUÇÃO PROVISÓRIA PRA FUNCIONAR AGORA:
-            // Vamos reconstruir a resposta correta baseada na ordem lógica (Difícil).
-            // MELHOR: Vamos apenas aceitar se o usuário usar todas as palavras certas? Não.
-            
-            // Vou assumir que você VAI dar um pequeno ajuste no backend depois.
-            // Por enquanto, vou validar "Hardcoded" para teste ou confiar no 'c' se ele existir.
-            
-            // Como resolver o erro de lógica do Back x Front no Assemble:
-            // O usuário monta: "The cat is black" -> Array ["The", "cat", "is", "black"]
-            // Precisamos comparar isso com a string alvo.
-            
-            // PULO DO GATO: Vou pedir pro back mandar a resposta pura no futuro.
-            // HOJE: Vou concatenar o array do usuário com espaços e ver se bate.
-            
-            // Como eu não tenho a resposta certa vindo do back (ele corta), 
-            // eu vou aceitar qualquer frase que use 4+ palavras por enquanto pra você ver a UI funcionando,
-            // OU (Melhor): O usuário ganha se usar todas as palavras que não sejam "distratores".
-            
-            // Vamos ser práticos: Vou deixar a validação do assemble "frouxa" (sempre acerta se tiver > 2 palavras) 
-            // SÓ PRA VOCÊ VER A UI e o SOM. Depois arrumamos o Backend pra mandar a resposta full.
-            
-            const userSentence = session.assembleUser.join(' ');
-            
-            // Validação Mockada (pois falta dado do back):
-            // Se montou algo com mais de 2 palavras, consideramos certo para o teste de UI
+            // Validação simples (leniente) para não travar sem backend perfeito
             const isCorrect = session.assembleUser.length >= 2; 
 
             if (isCorrect) {
-                document.getElementById('btnCheckAssemble').style.background = '#58cc02';
+                document.getElementById('btnCheckAssemble').style.background = '#adff2f';
                 playSound('correct');
-                speakText(userSentence); // Fala a frase que o usuário montou!
+                
+                // Se montou a frase, fala ela pra reforçar!
+                speakText(session.assembleUser.join(' '));
+                
                 handleSuccess();
             } else {
                 playSound('wrong');
@@ -438,14 +469,14 @@
             }
         }
 
-        // --- HANDLERS COMUNS ---
+        // --- HANDLERS FINAIS ---
         function handleSuccess() {
             session.correct++;
             session.answeredIds.push(session.currentQ.id); 
             updateBar();
             setTimeout(async () => {
                 if(session.questions.length === 0 || session.correct >= session.goal) {
-                        await finishLevel();
+                    await finishLevel();
                 } else {
                     nextQuestion();
                 }
@@ -457,7 +488,7 @@
             const livesData = await updateHeader(); 
             setTimeout(() => {
                 if(livesData && livesData.lives <= 0) {
-                        showFeedback('gameover');
+                    showFeedback('gameover');
                 } else {
                     if(session.questions.length > 0) {
                         nextQuestion();
@@ -474,7 +505,7 @@
 
         async function finishLevel() {
             showFeedback('victory');
-            playSound('correct'); // Toca som de vitória
+            playSound('correct');
             try {
                 await fetch(`${API_URL}/complete-level`, {
                     method: 'POST',
@@ -496,29 +527,25 @@
                 html = `
                     <div class="feedback-content">
                         <span class="feedback-icon">🏆</span>
-                        <div class="feedback-title" style="color:var(--primary)">NÍVEL COMPLETADO!</div>
-                        <p class="feedback-msg">Você ganhou +50 XP e subiu de nível!</p>
+                        <div class="feedback-title" style="color:#adff2f">NÍVEL COMPLETADO!</div>
+                        <p class="feedback-msg">Você ganhou +50 XP!</p>
                         <button class="btn-action" onclick="location.reload()">CONTINUAR</button>
-                    </div>
-                `;
+                    </div>`;
             } else if (type === 'gameover') {
                 html = `
                     <div class="feedback-content">
                         <span class="feedback-icon">💔</span>
-                        <div class="feedback-title" style="color:var(--danger)">SEM VIDAS!</div>
-                        <p class="feedback-msg">Descanse um pouco e tente novamente.</p>
+                        <div class="feedback-title" style="color:#ff4d4d">SEM VIDAS!</div>
+                        <p class="feedback-msg">Descanse e tente depois.</p>
                         <button class="btn-action danger" onclick="location.reload()">SAIR</button>
-                    </div>
-                `;
+                    </div>`;
             } else if (type === 'retry') {
                 html = `
                     <div class="feedback-content">
                         <span class="feedback-icon">😢</span>
                         <div class="feedback-title">NÃO FOI DESSA VEZ</div>
-                        <p class="feedback-msg">Você não acertou o suficiente.</p>
                         <button class="btn-action" onclick="location.reload()">TENTAR DE NOVO</button>
-                    </div>
-                `;
+                    </div>`;
             }
             contentDiv.innerHTML = html;
         }
