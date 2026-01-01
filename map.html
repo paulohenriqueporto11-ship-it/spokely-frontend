@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spokely - Mapa</title>
+    <link rel="icon" href="data:,">
+    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -61,10 +63,21 @@
         window.addEventListener('load', async () => {
             // updateHeader vem do js/script.js
             const data = await updateHeader(); 
+            
             if(data) {
                 currentLevel = data.current_level || 1;
                 renderMap();
                 setTimeout(scrollToLevel, 300);
+
+                // --- FIX: O Loading some aqui ---
+                const loadScreen = document.getElementById('loading');
+                if(loadScreen) loadScreen.style.display = 'none';
+            } else {
+                // Se der erro no carregamento, avisa (opcional)
+                console.warn("Dados não carregaram corretamente.");
+                // Mesmo com erro, remove o loading pra não travar a tela
+                const loadScreen = document.getElementById('loading');
+                if(loadScreen) loadScreen.style.display = 'none';
             }
         });
 
@@ -75,6 +88,7 @@
                 const node = document.createElement('div');
                 node.className = 'node';
                 node.innerText = i;
+                
                 if (i < currentLevel) {
                     node.classList.add('done');
                     node.innerText = '✓';
@@ -102,16 +116,15 @@
             const lives = document.getElementById('livesDisplay').innerText;
             if(parseInt(lives) <= 0) return alert("Sem vidas! 💔");
             
-            // UI de Carregamento
+            // UI de Carregamento do Quiz
             document.getElementById('overlay-quiz').style.display = 'flex';
             document.getElementById('qText').innerText = "Carregando atividade...";
             document.getElementById('qOptions').innerHTML = "";
 
-            // Define dificuldade (Pode criar um seletor depois, por enquanto vai easy)
             const difficulty = 'easy'; 
 
             try {
-                // BUSCA PERGUNTAS NO SERVIDOR (Usa API_URL e USER_ID do config.js)
+                // BUSCA PERGUNTAS NO SERVIDOR
                 const res = await fetch(`${API_URL}/get-activity?user_id=${USER_ID}&difficulty=${difficulty}`);
                 const data = await res.json();
 
@@ -164,7 +177,7 @@
             if(sel === cor) {
                 btn.classList.add('correct');
                 session.correct++;
-                session.answeredIds.push(session.currentQ.id); // Salva ID para não repetir
+                session.answeredIds.push(session.currentQ.id); 
                 updateBar();
                 
                 setTimeout(async () => {
@@ -177,12 +190,12 @@
                 }, 1000);
             } else {
                 btn.classList.add('wrong');
-                all[cor].classList.add('correct'); // Mostra a certa
+                all[cor].classList.add('correct'); 
                 
-                await apiLoseLife(); // Função do script.js
+                await apiLoseLife(); 
                 const lives = await updateHeader(); 
                 
-                if(lives.lives <= 0) {
+                if(lives && lives.lives <= 0) {
                     alert("Game Over!");
                     location.reload();
                 } else {
