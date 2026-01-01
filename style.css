@@ -1,0 +1,72 @@
+* { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+body { 
+    font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #eee; 
+    margin: 0; padding: 0; height: 100vh; overflow: hidden; 
+    display: flex; flex-direction: column;
+}
+
+/* HEADER */
+header {
+    padding: 15px 20px; background: #1f1f1f; border-bottom: 1px solid #333;
+    display: flex; justify-content: space-between; align-items: center; z-index: 10;
+}
+.logo { font-weight: 900; color: #fff; letter-spacing: -1px; }
+.header-stats { display: flex; gap: 15px; }
+.stat-badge { 
+    background: #2a2a2a; padding: 5px 12px; border-radius: 20px; 
+    font-size: 0.85rem; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 5px; border: 1px solid #333;
+}
+.icon-xp { color: #adff2f; }
+.icon-heart { color: #ff4d4d; }
+
+/* TELAS */
+main { flex: 1; position: relative; overflow: hidden; }
+.screen { position: absolute; top:0; left:0; width:100%; height:100%; display: none; flex-direction: column; overflow-y: auto; }
+.screen.active { display: flex; }
+
+/* MAPA */
+#screen-map { background: #121212; justify-content: center; overflow-x: auto; overflow-y: hidden; }
+.map-track-container { display: flex; align-items: center; padding: 0 50vw 0 50px; min-width: max-content; height: 100%; position: relative; }
+.map-line { position: absolute; left: 0; height: 6px; background: #333; z-index: 0; width: 100%; top: 50%; transform: translateY(-50%); }
+
+.level-node {
+    width: 65px; height: 65px; border-radius: 50%; background: #2a2a2a; border: 5px solid #444;
+    margin-right: 40px; position: relative; z-index: 2; display: flex; justify-content: center; align-items: center;
+    font-weight: 900; color: #666; font-size: 1.2rem; cursor: pointer; transition: transform 0.2s; flex-shrink: 0;
+}
+.level-node.completed { background: #adff2f; border-color: #adff2f; color: #000; }
+.level-node.current { background: #fff; border-color: #fff; color: #000; transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.4); }
+.level-node.locked { opacity: 0.5; pointer-events: none; }
+
+.avatar-marker {
+    position: absolute; top: -60px; left: 50%; transform: translateX(-50%); width: 55px; height: 55px; 
+    background-image: url('https://api.dicebear.com/7.x/bottts/svg?seed=Spokely'); background-size: cover;
+    filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); animation: bounce 1s infinite alternate; z-index: 5; pointer-events: none;
+}
+@keyframes bounce { from { top: -65px; } to { top: -55px; } }
+
+/* QUIZ MODAL */
+#quiz-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); 
+    z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px;
+}
+.quiz-card { background: #1f1f1f; width: 100%; max-width: 350px; padding: 2rem; border-radius: 20px; border: 1px solid #333; text-align: center; }
+.quiz-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+.difficulty-badge { background: #333; color: #adff2f; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+.quiz-question { font-size: 1.4rem; font-weight: 700; margin-bottom: 25px; color: #fff; }
+.quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+.btn-opt { padding: 16px; background: #2a2a2a; border: 2px solid transparent; color: #fff; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 1rem; }
+.btn-opt.correct { background: #adff2f; color: #000; border-color: #adff2f; }
+.btn-opt.wrong { background: #ff4d4d; border-color: #ff4d4d; }
+#btnExit { margin-top: 20px; background: none; border: none; color: #666; text-decoration: underline; cursor: pointer; }
+
+/* NAV */
+nav { background: #1f1f1f; border-top: 1px solid #333; height: 65px; display: flex; justify-content: space-around; align-items: center; z-index: 20; }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #666; font-size: 0.7rem; width: 60px; cursor: pointer; }
+.nav-item.active { color: #adff2f; }
+
+/* EXTRAS */
+.card-home { background: #222; padding: 20px; border-radius: 15px; margin: 20px; border: 1px solid #333; }
+.profile-center { text-align: center; padding-top: 50px; }
+.avatar-big { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #adff2f; margin-bottom: 15px; }
+#loading { position: fixed; top:0; left:0; width:100%; height:100%; background:#0f0f0f; z-index:200; display:flex; justify-content:center; align-items:center; color:#adff2f; font-weight:bold; }
