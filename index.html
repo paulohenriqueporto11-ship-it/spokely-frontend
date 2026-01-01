@@ -3,71 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spokely App</title>
+    <title>Spokely</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="loading">CARREGANDO MUNDO...</div>
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>CONECTANDO...</p>
+    </div>
 
     <header>
         <div class="logo">SPOKELY</div>
-        <div class="header-stats">
-            <div class="stat-badge"><span class="material-icons-round icon-heart">favorite</span> <span id="livesDisplay">--</span></div>
-            <div class="stat-badge"><span class="material-icons-round icon-xp">bolt</span> <span id="xpDisplay">--</span></div>
+        <div class="stats">
+            <div class="badge"><span class="material-icons-round icon-heart">favorite</span> <span id="livesDisplay">--</span></div>
+            <div class="badge"><span class="material-icons-round icon-xp">bolt</span> <span id="xpDisplay">--</span></div>
         </div>
     </header>
 
     <main>
-        <div id="screen-home" class="screen">
-            <div class="card-home">
-                <h2>Olá, Viajante!</h2>
-                <p>Meta: Complete 1 lição completa hoje.</p>
+        <section id="area-home" class="active">
+            <div class="welcome-card">
+                <h1>Let's go, Viajante!</h1>
+                <p>Sua próxima parada é o Nível <span id="nextLevelNum">--</span>.</p>
+                <button class="btn-play-big" onclick="navTo('map')">CONTINUAR JORNADA</button>
             </div>
-            <p style="text-align:center; color:#666; margin-top:50px;">Clique em <b>ESTUDAR</b> lá embaixo 👇</p>
-        </div>
-
-        <div id="screen-map" class="screen active">
-            <div class="map-track-container" id="mapTrack">
+            
+            <div class="daily-info">
+                <h3>🗓️ Missão de Hoje</h3>
+                <div class="mission-item">
+                    <span>Acertar 10 questões</span>
+                    <div class="check">0/10</div>
                 </div>
-        </div>
+            </div>
+        </section>
 
-        <div id="screen-profile" class="screen profile-center">
-            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Spokely" class="avatar-big">
-            <h2 id="userName">Usuário</h2>
-            <p>Nível Atual: <span id="lvlDisplay">--</span></p>
-        </div>
+        <section id="area-map">
+            <div class="map-scroll" id="mapTrack">
+                </div>
+        </section>
+
+        <section id="area-profile">
+            <div class="profile-header">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Spokely" class="avatar-lg">
+                <h2 id="profileName">Estudante</h2>
+                <div class="level-tag">NÍVEL <span id="lvlDisplay">--</span></div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <span>🔥</span>
+                    <strong>1</strong>
+                    <small>Dia Seguido</small>
+                </div>
+                <div class="stat-box">
+                    <span>🏆</span>
+                    <strong id="totalXpProfile">0</strong>
+                    <small>Total XP</small>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <div id="quiz-overlay">
-        <div class="quiz-card">
-            <div class="quiz-header">
-                <span onclick="exitQuiz()" style="cursor:pointer; color:#666; font-size:1.2rem;">✕</span>
-                
-                <div class="lesson-progress-track">
-                    <div id="lessonBar" class="lesson-progress-fill"></div>
-                </div>
-                
-                <span id="livesInQuiz" style="color:#ff4d4d; font-weight:bold;">❤❤❤❤❤</span>
+    <div id="overlay-quiz" class="overlay">
+        <div class="quiz-container">
+            <div class="quiz-top">
+                <span onclick="quitQuiz()" class="close-btn">✕</span>
+                <div class="progress-bar"><div id="lessonProgress"></div></div>
+                <span class="hearts" id="quizLives">❤❤❤❤❤</span>
             </div>
             
-            <p class="quiz-question" id="qText">Carregando...</p>
-            <div class="quiz-opts" id="qOptions"></div>
-            
+            <div class="quiz-content">
+                <h3 id="qQuestion">Carregando...</h3>
+                <div id="qOptions" class="options-grid"></div>
+            </div>
         </div>
     </div>
 
-    <nav>
-        <div class="nav-item" onclick="switchScreen('home', this)">
-            <span class="material-icons-round">home</span> <span>Home</span>
-        </div>
-        <div class="nav-item active" onclick="switchScreen('map', this)">
-            <span class="material-icons-round">map</span> <span>Estudar</span>
-        </div>
-        <div class="nav-item" onclick="switchScreen('profile', this)">
-            <span class="material-icons-round">person</span> <span>Perfil</span>
-        </div>
+    <nav class="bottom-nav">
+        <button class="nav-btn active" onclick="navTo('home', this)">
+            <span class="material-icons-round">home</span>
+            <span>Início</span>
+        </button>
+        <button class="nav-btn" onclick="navTo('map', this)">
+            <span class="material-icons-round">map</span>
+            <span>Mapa</span>
+        </button>
+        <button class="nav-btn" onclick="navTo('profile', this)">
+            <span class="material-icons-round">person</span>
+            <span>Perfil</span>
+        </button>
     </nav>
 
     <script src="script.js"></script>
