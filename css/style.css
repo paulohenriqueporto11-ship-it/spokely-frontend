@@ -35,14 +35,27 @@ main { flex: 1; overflow-y: auto; position: relative; }
 
 /* QUIZ */
 .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--bg); z-index: 100; display: none; justify-content: center; padding: 20px; }
-.quiz-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; height: 100%; }
+.quiz-container { width: 100%; max-width: 400px; display: flex; flex-direction: column; height: 100%; transition: all 0.3s ease; }
 .quiz-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; margin-top: 10px; }
 .progress-bar { flex: 1; height: 10px; background: #333; margin: 0 15px; border-radius: 5px; overflow: hidden; }
 #lessonProgress { width: 0%; height: 100%; background: var(--primary); transition: width 0.3s; }
 .quiz-content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.btn-opt { padding: 18px; background: var(--card); border: 2px solid transparent; color: #fff; border-radius: 12px; font-size: 1rem; font-weight: 600; text-align: left; cursor: pointer; margin-bottom: 10px; width: 100%; }
+.btn-opt { padding: 18px; background: var(--card); border: 2px solid transparent; color: #fff; border-radius: 12px; font-size: 1rem; font-weight: 600; text-align: left; cursor: pointer; margin-bottom: 10px; width: 100%; transition: transform 0.1s; }
+.btn-opt:active { transform: scale(0.98); }
 .btn-opt.correct { background: var(--primary); color: #000; border-color: var(--primary); }
 .btn-opt.wrong { background: var(--danger); border-color: var(--danger); }
+
+/* TELAS DE FEEDBACK (NOVO) */
+.feedback-content { text-align: center; padding: 20px; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.feedback-icon { font-size: 80px; margin-bottom: 15px; display: block; }
+.feedback-title { font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #fff; }
+.feedback-msg { color: #888; margin-bottom: 25px; font-size: 16px; }
+
+.btn-action { background: var(--primary); color: #000; border: none; padding: 16px 30px; border-radius: 12px; font-size: 18px; font-weight: 800; cursor: pointer; width: 100%; box-shadow: 0 4px 0 #85c425; transition: transform 0.1s; text-transform: uppercase; }
+.btn-action:active { transform: translateY(4px); box-shadow: none; }
+.btn-action.danger { background: var(--danger); color: #fff; box-shadow: 0 4px 0 #b33636; }
+
+@keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
 /* HOME & PROFILE */
 .welcome-card { background: linear-gradient(135deg, #2a2a2a, #1a1a1a); padding: 25px; border-radius: 20px; border: 1px solid #333; text-align: center; margin: 20px; }
