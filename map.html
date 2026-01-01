@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spokely - Mapa</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div id="loading">CARREGANDO MAPA...</div>
@@ -49,187 +49,183 @@
         </a>
     </nav>
 
-    <script src="script.js"></script>
-   <script>
-    // --- VARIÁVEIS GLOBAIS ---
-    let currentLevel = 1;
-    let session = { correct: 0, goal: 5, questions: [], answeredIds: [] };
+    <script src="js/config.js"></script>
+    <script src="js/script.js"></script>
 
-    // Carrega Mapa
-    window.addEventListener('load', async () => {
-        const data = await updateHeader(); // Vem do script.js
-        if(data) {
-            currentLevel = data.current_level || 1;
-            renderMap();
-            setTimeout(scrollToLevel, 300);
-        }
-    });
+    <script>
+        // Variáveis Locais
+        let currentLevel = 1;
+        let session = { correct: 0, goal: 5, questions: [], answeredIds: [] };
 
-    function renderMap() {
-        const track = document.getElementById('mapTrack');
-        track.innerHTML = ''; 
-        for (let i = 1; i <= 50; i++) { 
-            const node = document.createElement('div');
-            node.className = 'node';
-            node.innerText = i;
-            if (i < currentLevel) {
-                node.classList.add('done');
-                node.innerText = '✓';
-            } else if (i === currentLevel) {
-                node.classList.add('curr');
-                const av = document.createElement('div');
-                av.className = 'avatar';
-                node.appendChild(av);
-                node.onclick = () => startSession();
-            } else {
-                node.classList.add('locked');
-                node.innerHTML = '<span class="material-icons-round">lock</span>';
+        // Carrega Mapa ao iniciar
+        window.addEventListener('load', async () => {
+            // updateHeader vem do js/script.js
+            const data = await updateHeader(); 
+            if(data) {
+                currentLevel = data.current_level || 1;
+                renderMap();
+                setTimeout(scrollToLevel, 300);
             }
-            track.appendChild(node);
-        }
-    }
-
-    function scrollToLevel() {
-        const el = document.querySelector('.node.curr');
-        if(el) el.scrollIntoView({ inline: 'center', behavior: 'smooth' });
-    }
-
-    // --- SISTEMA DE QUIZ CONECTADO AO BACKEND ---
-    async function startSession() {
-        const lives = document.getElementById('livesDisplay').innerText;
-        if(parseInt(lives) <= 0) return alert("Sem vidas! 💔");
-        
-        // UI de Carregamento
-        document.getElementById('overlay-quiz').style.display = 'flex';
-        document.getElementById('qText').innerText = "Carregando atividade...";
-        document.getElementById('qOptions').innerHTML = "";
-
-        // Define dificuldade (Pode criar um seletor depois, por enquanto vai easy)
-        const difficulty = 'easy'; 
-
-        try {
-            // BUSCA PERGUNTAS NO SERVIDOR
-            const res = await fetch(`${API_URL}/get-activity?user_id=${USER_ID}&difficulty=${difficulty}`);
-            const data = await res.json();
-
-            if(!data.success) {
-                alert(data.error || "Erro ao buscar atividades.");
-                document.getElementById('overlay-quiz').style.display = 'none';
-                return;
-            }
-
-            // Prepara a sessão
-            session.questions = data.questions;
-            session.correct = 0;
-            session.goal = session.questions.length;
-            session.answeredIds = [];
-            
-            updateBar();
-            nextQuestion();
-
-        } catch (e) {
-            console.error(e);
-            alert("Erro de conexão.");
-            document.getElementById('overlay-quiz').style.display = 'none';
-        }
-    }
-
-    function nextQuestion() {
-        // Pega a próxima pergunta da lista
-        const q = session.questions.pop(); 
-        
-        if (!q) {
-             // Segurança caso acabe
-             return; 
-        }
-
-        // Salva a pergunta atual para conferência
-        session.currentQ = q; 
-
-        document.getElementById('qText').innerText = q.t;
-        const opts = document.getElementById('qOptions');
-        opts.innerHTML = '';
-        
-        q.o.forEach((opt, idx) => {
-            const btn = document.createElement('button');
-            btn.className = 'btn-opt';
-            btn.innerText = opt;
-            btn.onclick = () => check(idx, q.c, btn);
-            opts.appendChild(btn);
         });
-    }
 
-    async function check(sel, cor, btn) {
-        const all = document.querySelectorAll('.btn-opt');
-        all.forEach(b => b.disabled = true);
-
-        if(sel === cor) {
-            btn.classList.add('correct');
-            session.correct++;
-            session.answeredIds.push(session.currentQ.id); // Salva ID para não repetir
-            updateBar();
-            
-            setTimeout(async () => {
-                if(session.questions.length === 0) {
-                    // Se acertou o necessário ou acabaram as perguntas do lote
-                    if(session.correct >= session.goal || session.questions.length === 0) {
-                         await finishLevel();
-                    }
+        function renderMap() {
+            const track = document.getElementById('mapTrack');
+            track.innerHTML = ''; 
+            for (let i = 1; i <= 50; i++) { 
+                const node = document.createElement('div');
+                node.className = 'node';
+                node.innerText = i;
+                if (i < currentLevel) {
+                    node.classList.add('done');
+                    node.innerText = '✓';
+                } else if (i === currentLevel) {
+                    node.classList.add('curr');
+                    const av = document.createElement('div');
+                    av.className = 'avatar';
+                    node.appendChild(av);
+                    node.onclick = () => startSession();
                 } else {
-                    nextQuestion();
+                    node.classList.add('locked');
+                    node.innerHTML = '<span class="material-icons-round">lock</span>';
                 }
-            }, 1000);
-        } else {
-            btn.classList.add('wrong');
-            // Mostra a correta
-            all[cor].classList.add('correct');
+                track.appendChild(node);
+            }
+        }
+
+        function scrollToLevel() {
+            const el = document.querySelector('.node.curr');
+            if(el) el.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+        }
+
+        // --- SISTEMA DE QUIZ CONECTADO AO BACKEND ---
+        async function startSession() {
+            const lives = document.getElementById('livesDisplay').innerText;
+            if(parseInt(lives) <= 0) return alert("Sem vidas! 💔");
             
-            await apiLoseLife();
-            const lives = await updateHeader(); 
-            if(lives.lives <= 0) {
-                alert("Game Over!");
-                location.reload();
+            // UI de Carregamento
+            document.getElementById('overlay-quiz').style.display = 'flex';
+            document.getElementById('qText').innerText = "Carregando atividade...";
+            document.getElementById('qOptions').innerHTML = "";
+
+            // Define dificuldade (Pode criar um seletor depois, por enquanto vai easy)
+            const difficulty = 'easy'; 
+
+            try {
+                // BUSCA PERGUNTAS NO SERVIDOR (Usa API_URL e USER_ID do config.js)
+                const res = await fetch(`${API_URL}/get-activity?user_id=${USER_ID}&difficulty=${difficulty}`);
+                const data = await res.json();
+
+                if(!data.success) {
+                    alert(data.error || "Erro ao buscar atividades.");
+                    document.getElementById('overlay-quiz').style.display = 'none';
+                    return;
+                }
+
+                // Prepara a sessão
+                session.questions = data.questions;
+                session.correct = 0;
+                session.goal = session.questions.length;
+                session.answeredIds = [];
+                
+                updateBar();
+                nextQuestion();
+
+            } catch (e) {
+                console.error(e);
+                alert("Erro de conexão.");
+                document.getElementById('overlay-quiz').style.display = 'none';
+            }
+        }
+
+        function nextQuestion() {
+            const q = session.questions.pop(); 
+            
+            if (!q) return; // Segurança
+
+            session.currentQ = q; 
+
+            document.getElementById('qText').innerText = q.t;
+            const opts = document.getElementById('qOptions');
+            opts.innerHTML = '';
+            
+            q.o.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-opt';
+                btn.innerText = opt;
+                btn.onclick = () => check(idx, q.c, btn);
+                opts.appendChild(btn);
+            });
+        }
+
+        async function check(sel, cor, btn) {
+            const all = document.querySelectorAll('.btn-opt');
+            all.forEach(b => b.disabled = true);
+
+            if(sel === cor) {
+                btn.classList.add('correct');
+                session.correct++;
+                session.answeredIds.push(session.currentQ.id); // Salva ID para não repetir
+                updateBar();
+                
+                setTimeout(async () => {
+                    // Se acabou as perguntas ou atingiu a meta
+                    if(session.questions.length === 0 || session.correct >= session.goal) {
+                         await finishLevel();
+                    } else {
+                        nextQuestion();
+                    }
+                }, 1000);
             } else {
-                // Errou? Segue o jogo se ainda tiver perguntas
-                if(session.questions.length > 0) {
-                    setTimeout(nextQuestion, 1500);
+                btn.classList.add('wrong');
+                all[cor].classList.add('correct'); // Mostra a certa
+                
+                await apiLoseLife(); // Função do script.js
+                const lives = await updateHeader(); 
+                
+                if(lives.lives <= 0) {
+                    alert("Game Over!");
+                    location.reload();
                 } else {
-                    alert("Você errou na última pergunta. Tente novamente!");
+                    if(session.questions.length > 0) {
+                        setTimeout(nextQuestion, 1500);
+                    } else {
+                        // Se errou a última e não bateu a meta
+                        alert("Não atingiu a meta. Tente novamente!");
+                        location.reload();
+                    }
+                }
+            }
+        }
+
+        function updateBar() {
+            document.getElementById('lessonProgress').style.width = `${(session.correct/session.goal)*100}%`;
+        }
+
+        async function finishLevel() {
+            try {
+                const res = await fetch(`${API_URL}/complete-level`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        user_id: USER_ID, 
+                        xp_reward: 50,
+                        questions_ids: session.answeredIds
+                    })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert("NÍVEL COMPLETADO! 🎉");
                     location.reload();
                 }
-            }
+            } catch(e) { console.error(e); }
         }
-    }
 
-    function updateBar() {
-        document.getElementById('lessonProgress').style.width = `${(session.correct/session.goal)*100}%`;
-    }
-
-    async function finishLevel() {
-        try {
-            const res = await fetch(`${API_URL}/complete-level`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    user_id: USER_ID, 
-                    xp_reward: 50,
-                    questions_ids: session.answeredIds // Envia os IDs para salvar no histórico
-                })
-            });
-            const data = await res.json();
-            if(data.success) {
-                alert("NÍVEL COMPLETADO! 🎉");
+        async function quitQuiz() {
+            if(confirm("Sair custa 1 vida. Confirmar?")) {
+                await apiLoseLife();
                 location.reload();
             }
-        } catch(e) { console.error(e); }
-    }
-
-    async function quitQuiz() {
-        if(confirm("Sair custa 1 vida. Confirmar?")) {
-            await apiLoseLife();
-            location.reload();
         }
-    }
-</script>
+    </script>
 </body>
 </html>
