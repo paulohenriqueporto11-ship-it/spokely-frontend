@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spokely - Perfil</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loading">CARREGANDO...</div>
+
+    <header>
+        <a href="index.html" class="logo">SPOKELY</a>
+        <div class="stats">
+            <div class="badge"><span class="material-icons-round icon-heart">favorite</span> <span id="livesDisplay">--</span></div>
+            <div class="badge"><span class="material-icons-round icon-xp">bolt</span> <span id="xpDisplay">--</span></div>
+        </div>
+    </header>
+
+    <main>
+        <div class="profile-header">
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Spokely" class="avatar-lg">
+            <h2 id="userName" style="margin-bottom:5px;">Estudante VIP</h2>
+            <div style="color:#adff2f; font-weight:bold;">NÍVEL <span id="lvlDisplay">--</span></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; padding:0 20px;">
+            <div style="background:#1f1f1f; padding:20px; border-radius:15px; text-align:center; border:1px solid #333;">
+                <div style="font-size:2rem;">🔥</div>
+                <h3>1</h3>
+                <small style="color:#666;">Dia de Ofensiva</small>
+            </div>
+            <div style="background:#1f1f1f; padding:20px; border-radius:15px; text-align:center; border:1px solid #333;">
+                <div style="font-size:2rem;">🏆</div>
+                <h3 id="xpTotal">--</h3>
+                <small style="color:#666;">Total XP</small>
+            </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link">
+            <span class="material-icons-round">home</span> <span>Início</span>
+        </a>
+        <a href="map.html" class="nav-link">
+            <span class="material-icons-round">map</span> <span>Estudar</span>
+        </a>
+        <a href="profile.html" class="nav-link active">
+            <span class="material-icons-round">person</span> <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script src="script.js"></script>
+    <script>
+        // Carrega dados específicos do perfil
+        window.addEventListener('load', async () => {
+            const data = await updateHeader();
+            if(data) {
+                document.getElementById('lvlDisplay').innerText = data.current_level || 1;
+                document.getElementById('xpTotal').innerText = data.xp;
+            }
+        });
+    </script>
+</body>
+</html>
