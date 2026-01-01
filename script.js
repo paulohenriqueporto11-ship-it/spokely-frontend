@@ -1,13 +1,13 @@
 const API_URL = "https://spokely-backend-1.onrender.com";
-const USER_ID = "81d8e5b7-edb2-4227-9fb2-8d4863b51414"; // <--- SEU ID
+const USER_ID = "81d8e5b7-edb2-4227-9fb2-8d4863b51414"; // <--- SEU ID AQUI
 
 // --- DADOS LOCAIS ---
-let userData = {
-    level: 1,
-    xp: 0,
-    lives: 5
-};
-const TOTAL_LEVELS = 50;
+let userData = { level: 1, xp: 0, lives: 5 };
+const TOTAL_LEVELS = 50; // Total de fases no mapa
+
+// --- CONTROLE DA SESSÃO (AULA) ---
+let sessionProgress = 0; // Quantas acertei agora
+const GOAL_QUESTIONS = 5; // Precisa acertar 5 pra passar de nível
 
 // --- ELEMENTOS ---
 const mapTrack = document.getElementById('mapTrack');
@@ -15,6 +15,7 @@ const quizOverlay = document.getElementById('quiz-overlay');
 const livesDisplay = document.getElementById('livesDisplay');
 const xpDisplay = document.getElementById('xpDisplay');
 const lvlDisplay = document.getElementById('lvlDisplay');
+const lessonBar = document.getElementById('lessonBar');
 
 // --- INICIALIZAÇÃO ---
 window.onload = async () => {
@@ -29,12 +30,11 @@ async function loadProfile() {
     try {
         const res = await fetch(`${API_URL}/get-profile?user_id=${USER_ID}`);
         const data = await res.json();
-        
         if (data.level) {
             userData = data;
             updateUI();
         }
-    } catch (e) { console.error("Erro load:", e); }
+    } catch (e) { console.error(e); }
 }
 
 async function loseLifeAPI() {
@@ -49,37 +49,36 @@ async function loseLifeAPI() {
             userData.lives = data.lives;
             updateUI();
         }
-    } catch (e) { console.error("Erro life:", e); }
+    } catch (e) { console.error(e); }
 }
 
-async function sendProgress(xpAmount) {
+async function finishLevel() {
+    // Só chama quando completar as 5 perguntas
     try {
+        // 50 XP por lição completa
         const res = await fetch(`${API_URL}/add-xp`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: USER_ID, xp_amount: xpAmount }) 
+            body: JSON.stringify({ user_id: USER_ID, xp_amount: 50 }) 
         });
         const data = await res.json();
         if(data.success) {
             userData.level = data.new_level;
             userData.xp = data.current_xp;
             
-            // ATUALIZA TUDO E FECHA
             updateUI();
             renderMap();
             closeQuiz(); 
             
-            alert(`Nível Concluído! +${xpAmount} XP`);
+            alert(`LIÇÃO CONCLUÍDA! 🎉\n+50 XP`);
             setTimeout(scrollToCurrentLevel, 500);
         }
-    } catch(e) { console.error("Erro xp:", e); }
+    } catch(e) { console.error(e); }
 }
 
 // --- MAPA ---
 function renderMap() {
-    // Recria o mapa do zero para garantir atualização
     mapTrack.innerHTML = '<div class="map-line"></div>';
-
     for (let i = 1; i <= TOTAL_LEVELS; i++) {
         const node = document.createElement('div');
         node.className = 'level-node';
@@ -93,7 +92,7 @@ function renderMap() {
             const avatar = document.createElement('div');
             avatar.className = 'avatar-marker';
             node.appendChild(avatar);
-            node.onclick = () => openQuiz(i);
+            node.onclick = () => startSession(i);
         } else {
             node.classList.add('locked');
             node.innerHTML = '<span class="material-icons-round">lock</span>';
@@ -107,24 +106,36 @@ function scrollToCurrentLevel() {
     if(current) current.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'center' });
 }
 
-// --- QUIZ ---
-const questions = [
+// --- QUIZ SESSION ---
+const questionsBank = [
     { t: "Traduza 'House'", o: ["Carro", "Casa", "Rua", "Prédio"], c: 1 },
     { t: "Verbo 'To Be' (Eu)", o: ["Is", "Are", "Am", "Be"], c: 2 },
-    { t: "Cor 'Blue'", o: ["Azul", "Vermelho", "Verde", "Preto"], c: 0 }
+    { t: "Cor 'Blue'", o: ["Azul", "Vermelho", "Verde", "Preto"], c: 0 },
+    { t: "Traduza 'Dog'", o: ["Gato", "Pássaro", "Peixe", "Cachorro"], c: 3 },
+    { t: "Oposto de 'Happy'", o: ["Sad", "Good", "Nice", "Angry"], c: 0 },
+    { t: "Passado de 'Go'", o: ["Gone", "Goed", "Went", "Gowing"], c: 2 },
+    { t: "Traduza 'Book'", o: ["Livro", "Mesa", "Caneta", "Papel"], c: 0 }
 ];
 
-function openQuiz(level) {
+function startSession(level) {
     if(userData.lives <= 0) {
-        alert("Sem vidas! Espere recarregar.");
+        alert("Você está sem vidas! 💔\nEspere recarregar ou compre mais.");
         return;
     }
+    
+    // Reseta progresso da aula
+    sessionProgress = 0;
+    updateSessionBar();
+    
     quizOverlay.style.display = 'flex';
+    loadNextQuestion();
+}
+
+function loadNextQuestion() {
+    // Sorteia uma pergunta
+    const q = questionsBank[Math.floor(Math.random() * questionsBank.length)];
     
-    // Sorteia pergunta simples
-    const q = questions[Math.floor(Math.random() * questions.length)];
     document.getElementById('qText').innerText = q.t;
-    
     const opts = document.getElementById('qOptions');
     opts.innerHTML = '';
     
@@ -139,22 +150,56 @@ function openQuiz(level) {
 
 async function checkAnswer(selected, correct, btn) {
     const all = document.querySelectorAll('.btn-opt');
-    all.forEach(b => b.disabled = true);
+    all.forEach(b => b.disabled = true); // Trava cliques
 
     if (selected === correct) {
+        // ACERTOU
         btn.classList.add('correct');
-        // Espera 1seg e processa vitoria
-        setTimeout(() => sendProgress(25), 1000);
+        sessionProgress++;
+        updateSessionBar();
+
+        setTimeout(() => {
+            if (sessionProgress >= GOAL_QUESTIONS) {
+                // Terminou a lição!
+                finishLevel();
+            } else {
+                // Próxima pergunta
+                loadNextQuestion();
+            }
+        }, 1000);
+
     } else {
+        // ERROU
         btn.classList.add('wrong');
-        await loseLifeAPI();
+        
+        // Atualiza UI localmente pra ser rápido
+        userData.lives--; 
+        updateUI();
+        
+        // Avisa backend
+        loseLifeAPI(); 
+        
         alert("Errou! -1 Vida 💔");
-        setTimeout(closeQuiz, 1000); // Fecha modal após errar
+
+        if (userData.lives <= 0) {
+            closeQuiz();
+            alert("Game Over! Suas vidas acabaram.");
+        } else {
+            // Recarrega OUTRA pergunta (ou a mesma)
+            setTimeout(loadNextQuestion, 1000);
+        }
     }
 }
 
+function updateSessionBar() {
+    const pct = (sessionProgress / GOAL_QUESTIONS) * 100;
+    lessonBar.style.width = `${pct}%`;
+}
+
 async function exitQuiz() {
-    if(confirm("Desistir custa 1 vida. Certeza?")) {
+    if(confirm("Sair da lição? Você perderá 1 vida!")) {
+        userData.lives--;
+        updateUI();
         await loseLifeAPI();
         closeQuiz();
     }
@@ -169,7 +214,7 @@ function updateUI() {
     livesDisplay.innerText = userData.lives;
     xpDisplay.innerText = userData.xp;
     lvlDisplay.innerText = userData.level;
-    document.getElementById('livesInQuiz').innerText = "❤".repeat(userData.lives);
+    document.getElementById('livesInQuiz').innerText = "❤".repeat(userData.lives > 0 ? userData.lives : 0);
 }
 
 function switchScreen(name, el) {
