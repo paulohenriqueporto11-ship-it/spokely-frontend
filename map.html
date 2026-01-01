@@ -50,146 +50,186 @@
     </nav>
 
     <script src="script.js"></script>
-    <script>
-        // --- LÓGICA EXCLUSIVA DO MAPA ---
-        let currentLevel = 1;
-        let session = { correct: 0, goal: 5 };
-        
-        // BANCO DE PERGUNTAS (30 Itens)
-        const questions = [
-            { t: "Traduza 'House'", o: ["Carro", "Casa", "Rua", "Prédio"], c: 1 },
-            { t: "Verbo 'To Be' (Eu)", o: ["Is", "Are", "Am", "Be"], c: 2 },
-            { t: "Cor 'Blue'", o: ["Azul", "Vermelho", "Verde", "Preto"], c: 0 },
-            { t: "Oposto de 'Big'", o: ["Small", "Large", "Huge", "Giant"], c: 0 },
-            { t: "Traduza: 'Chicken'", o: ["Vaca", "Porco", "Frango", "Peixe"], c: 2 },
-            { t: "Número 20", o: ["Twelve", "Twenty", "Two", "Ten"], c: 1 },
-            { t: "O que é 'Breakfast'?", o: ["Almoço", "Jantar", "Café da Manhã", "Lanche"], c: 2 },
-            { t: "Complete: They ___ playing.", o: ["is", "am", "are", "was"], c: 2 },
-            { t: "Traduza: 'Good Night'", o: ["Bom dia", "Boa tarde", "Boa noite", "Olá"], c: 2 },
-            { t: "Passado de 'See'", o: ["Saw", "Seen", "Seed", "Seeing"], c: 0 },
-            { t: "Traduza: 'Money'", o: ["Dinheiro", "Tempo", "Amor", "Trabalho"], c: 0 },
-            { t: "O que é 'Airport'?", o: ["Porto", "Aeroporto", "Estação", "Ponto"], c: 1 }
-            // Adicione mais se quiser...
-        ];
+   <script>
+    // --- VARIÁVEIS GLOBAIS ---
+    let currentLevel = 1;
+    let session = { correct: 0, goal: 5, questions: [], answeredIds: [] };
 
-        // Carrega Mapa
-        window.addEventListener('load', async () => {
-            const data = await updateHeader();
-            if(data) {
-                currentLevel = data.current_level || 1;
-                renderMap();
-                setTimeout(scrollToLevel, 300);
-            }
-        });
-
-        function renderMap() {
-            const track = document.getElementById('mapTrack');
-            track.innerHTML = ''; 
-            for (let i = 1; i <= 50; i++) { // 50 Fases
-                const node = document.createElement('div');
-                node.className = 'node';
-                node.innerText = i;
-                if (i < currentLevel) {
-                    node.classList.add('done');
-                    node.innerText = '✓';
-                } else if (i === currentLevel) {
-                    node.classList.add('curr');
-                    const av = document.createElement('div');
-                    av.className = 'avatar';
-                    node.appendChild(av);
-                    node.onclick = () => startSession();
-                } else {
-                    node.classList.add('locked');
-                    node.innerHTML = '<span class="material-icons-round">lock</span>';
-                }
-                track.appendChild(node);
-            }
+    // Carrega Mapa
+    window.addEventListener('load', async () => {
+        const data = await updateHeader(); // Vem do script.js
+        if(data) {
+            currentLevel = data.current_level || 1;
+            renderMap();
+            setTimeout(scrollToLevel, 300);
         }
+    });
 
-        function scrollToLevel() {
-            const el = document.querySelector('.node.curr');
-            if(el) el.scrollIntoView({ inline: 'center', behavior: 'smooth' });
-        }
-
-        // QUIZ SYSTEM
-        function startSession() {
-            const lives = document.getElementById('livesDisplay').innerText;
-            if(parseInt(lives) <= 0) return alert("Sem vidas! 💔");
-            
-            session.correct = 0;
-            updateBar();
-            document.getElementById('overlay-quiz').style.display = 'flex';
-            nextQuestion();
-        }
-
-        function nextQuestion() {
-            const q = questions[Math.floor(Math.random() * questions.length)];
-            document.getElementById('qText').innerText = q.t;
-            const opts = document.getElementById('qOptions');
-            opts.innerHTML = '';
-            
-            q.o.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-opt';
-                btn.innerText = opt;
-                btn.onclick = () => check(idx, q.c, btn);
-                opts.appendChild(btn);
-            });
-        }
-
-        async function check(sel, cor, btn) {
-            const all = document.querySelectorAll('.btn-opt');
-            all.forEach(b => b.disabled = true);
-
-            if(sel === cor) {
-                btn.classList.add('correct');
-                session.correct++;
-                updateBar();
-                setTimeout(async () => {
-                    if(session.correct >= session.goal) {
-                        await finishLevel();
-                    } else {
-                        nextQuestion();
-                    }
-                }, 1000);
+    function renderMap() {
+        const track = document.getElementById('mapTrack');
+        track.innerHTML = ''; 
+        for (let i = 1; i <= 50; i++) { 
+            const node = document.createElement('div');
+            node.className = 'node';
+            node.innerText = i;
+            if (i < currentLevel) {
+                node.classList.add('done');
+                node.innerText = '✓';
+            } else if (i === currentLevel) {
+                node.classList.add('curr');
+                const av = document.createElement('div');
+                av.className = 'avatar';
+                node.appendChild(av);
+                node.onclick = () => startSession();
             } else {
-                btn.classList.add('wrong');
-                await apiLoseLife();
-                const lives = await updateHeader(); // Atualiza contador
-                if(lives.lives <= 0) {
-                    alert("Game Over!");
-                    location.reload();
+                node.classList.add('locked');
+                node.innerHTML = '<span class="material-icons-round">lock</span>';
+            }
+            track.appendChild(node);
+        }
+    }
+
+    function scrollToLevel() {
+        const el = document.querySelector('.node.curr');
+        if(el) el.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+    }
+
+    // --- SISTEMA DE QUIZ CONECTADO AO BACKEND ---
+    async function startSession() {
+        const lives = document.getElementById('livesDisplay').innerText;
+        if(parseInt(lives) <= 0) return alert("Sem vidas! 💔");
+        
+        // UI de Carregamento
+        document.getElementById('overlay-quiz').style.display = 'flex';
+        document.getElementById('qText').innerText = "Carregando atividade...";
+        document.getElementById('qOptions').innerHTML = "";
+
+        // Define dificuldade (Pode criar um seletor depois, por enquanto vai easy)
+        const difficulty = 'easy'; 
+
+        try {
+            // BUSCA PERGUNTAS NO SERVIDOR
+            const res = await fetch(`${API_URL}/get-activity?user_id=${USER_ID}&difficulty=${difficulty}`);
+            const data = await res.json();
+
+            if(!data.success) {
+                alert(data.error || "Erro ao buscar atividades.");
+                document.getElementById('overlay-quiz').style.display = 'none';
+                return;
+            }
+
+            // Prepara a sessão
+            session.questions = data.questions;
+            session.correct = 0;
+            session.goal = session.questions.length;
+            session.answeredIds = [];
+            
+            updateBar();
+            nextQuestion();
+
+        } catch (e) {
+            console.error(e);
+            alert("Erro de conexão.");
+            document.getElementById('overlay-quiz').style.display = 'none';
+        }
+    }
+
+    function nextQuestion() {
+        // Pega a próxima pergunta da lista
+        const q = session.questions.pop(); 
+        
+        if (!q) {
+             // Segurança caso acabe
+             return; 
+        }
+
+        // Salva a pergunta atual para conferência
+        session.currentQ = q; 
+
+        document.getElementById('qText').innerText = q.t;
+        const opts = document.getElementById('qOptions');
+        opts.innerHTML = '';
+        
+        q.o.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-opt';
+            btn.innerText = opt;
+            btn.onclick = () => check(idx, q.c, btn);
+            opts.appendChild(btn);
+        });
+    }
+
+    async function check(sel, cor, btn) {
+        const all = document.querySelectorAll('.btn-opt');
+        all.forEach(b => b.disabled = true);
+
+        if(sel === cor) {
+            btn.classList.add('correct');
+            session.correct++;
+            session.answeredIds.push(session.currentQ.id); // Salva ID para não repetir
+            updateBar();
+            
+            setTimeout(async () => {
+                if(session.questions.length === 0) {
+                    // Se acertou o necessário ou acabaram as perguntas do lote
+                    if(session.correct >= session.goal || session.questions.length === 0) {
+                         await finishLevel();
+                    }
                 } else {
-                    setTimeout(nextQuestion, 1000);
+                    nextQuestion();
+                }
+            }, 1000);
+        } else {
+            btn.classList.add('wrong');
+            // Mostra a correta
+            all[cor].classList.add('correct');
+            
+            await apiLoseLife();
+            const lives = await updateHeader(); 
+            if(lives.lives <= 0) {
+                alert("Game Over!");
+                location.reload();
+            } else {
+                // Errou? Segue o jogo se ainda tiver perguntas
+                if(session.questions.length > 0) {
+                    setTimeout(nextQuestion, 1500);
+                } else {
+                    alert("Você errou na última pergunta. Tente novamente!");
+                    location.reload();
                 }
             }
         }
+    }
 
-        function updateBar() {
-            document.getElementById('lessonProgress').style.width = `${(session.correct/session.goal)*100}%`;
-        }
+    function updateBar() {
+        document.getElementById('lessonProgress').style.width = `${(session.correct/session.goal)*100}%`;
+    }
 
-        async function finishLevel() {
-            try {
-                const res = await fetch(`${API_URL}/complete-level`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ user_id: USER_ID, xp_reward: 50 })
-                });
-                const data = await res.json();
-                if(data.success) {
-                    alert("NÍVEL COMPLETADO! 🎉");
-                    location.reload();
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        async function quitQuiz() {
-            if(confirm("Sair custa 1 vida. Confirmar?")) {
-                await apiLoseLife();
+    async function finishLevel() {
+        try {
+            const res = await fetch(`${API_URL}/complete-level`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ 
+                    user_id: USER_ID, 
+                    xp_reward: 50,
+                    questions_ids: session.answeredIds // Envia os IDs para salvar no histórico
+                })
+            });
+            const data = await res.json();
+            if(data.success) {
+                alert("NÍVEL COMPLETADO! 🎉");
                 location.reload();
             }
+        } catch(e) { console.error(e); }
+    }
+
+    async function quitQuiz() {
+        if(confirm("Sair custa 1 vida. Confirmar?")) {
+            await apiLoseLife();
+            location.reload();
         }
-    </script>
+    }
+</script>
 </body>
 </html>
