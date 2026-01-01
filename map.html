@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spokely - Mapa</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loading">CARREGANDO MAPA...</div>
+
+    <header>
+        <a href="index.html" class="logo">SPOKELY</a>
+        <div class="stats">
+            <div class="badge"><span class="material-icons-round icon-heart">favorite</span> <span id="livesDisplay">--</span></div>
+            <div class="badge"><span class="material-icons-round icon-xp">bolt</span> <span id="xpDisplay">--</span></div>
+        </div>
+    </header>
+
+    <main id="mainMap">
+        <div class="map-scroll" id="mapTrack">
+            </div>
+    </main>
+
+    <div id="overlay-quiz" class="overlay">
+        <div class="quiz-container">
+            <div class="quiz-top">
+                <span onclick="quitQuiz()" style="cursor:pointer; color:#888;">✕</span>
+                <div class="progress-bar"><div id="lessonProgress"></div></div>
+                <span style="color:#ff4d4d;">❤</span>
+            </div>
+            <div class="quiz-content">
+                <h2 id="qText" style="margin-bottom:20px;">Carregando...</h2>
+                <div id="qOptions"></div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-link">
+            <span class="material-icons-round">home</span> <span>Início</span>
+        </a>
+        <a href="map.html" class="nav-link active">
+            <span class="material-icons-round">map</span> <span>Estudar</span>
+        </a>
+        <a href="profile.html" class="nav-link">
+            <span class="material-icons-round">person</span> <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script src="script.js"></script>
+    <script>
+        // --- LÓGICA EXCLUSIVA DO MAPA ---
+        let currentLevel = 1;
+        let session = { correct: 0, goal: 5 };
+        
+        // BANCO DE PERGUNTAS (30 Itens)
+        const questions = [
+            { t: "Traduza 'House'", o: ["Carro", "Casa", "Rua", "Prédio"], c: 1 },
+            { t: "Verbo 'To Be' (Eu)", o: ["Is", "Are", "Am", "Be"], c: 2 },
+            { t: "Cor 'Blue'", o: ["Azul", "Vermelho", "Verde", "Preto"], c: 0 },
+            { t: "Oposto de 'Big'", o: ["Small", "Large", "Huge", "Giant"], c: 0 },
+            { t: "Traduza: 'Chicken'", o: ["Vaca", "Porco", "Frango", "Peixe"], c: 2 },
+            { t: "Número 20", o: ["Twelve", "Twenty", "Two", "Ten"], c: 1 },
+            { t: "O que é 'Breakfast'?", o: ["Almoço", "Jantar", "Café da Manhã", "Lanche"], c: 2 },
+            { t: "Complete: They ___ playing.", o: ["is", "am", "are", "was"], c: 2 },
+            { t: "Traduza: 'Good Night'", o: ["Bom dia", "Boa tarde", "Boa noite", "Olá"], c: 2 },
+            { t: "Passado de 'See'", o: ["Saw", "Seen", "Seed", "Seeing"], c: 0 },
+            { t: "Traduza: 'Money'", o: ["Dinheiro", "Tempo", "Amor", "Trabalho"], c: 0 },
+            { t: "O que é 'Airport'?", o: ["Porto", "Aeroporto", "Estação", "Ponto"], c: 1 }
+            // Adicione mais se quiser...
+        ];
+
+        // Carrega Mapa
+        window.addEventListener('load', async () => {
+            const data = await updateHeader();
+            if(data) {
+                currentLevel = data.current_level || 1;
+                renderMap();
+                setTimeout(scrollToLevel, 300);
+            }
+        });
+
+        function renderMap() {
+            const track = document.getElementById('mapTrack');
+            track.innerHTML = ''; 
+            for (let i = 1; i <= 50; i++) { // 50 Fases
+                const node = document.createElement('div');
+                node.className = 'node';
+                node.innerText = i;
+                if (i < currentLevel) {
+                    node.classList.add('done');
+                    node.innerText = '✓';
+                } else if (i === currentLevel) {
+                    node.classList.add('curr');
+                    const av = document.createElement('div');
+                    av.className = 'avatar';
+                    node.appendChild(av);
+                    node.onclick = () => startSession();
+                } else {
+                    node.classList.add('locked');
+                    node.innerHTML = '<span class="material-icons-round">lock</span>';
+                }
+                track.appendChild(node);
+            }
+        }
+
+        function scrollToLevel() {
+            const el = document.querySelector('.node.curr');
+            if(el) el.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+        }
+
+        // QUIZ SYSTEM
+        function startSession() {
+            const lives = document.getElementById('livesDisplay').innerText;
+            if(parseInt(lives) <= 0) return alert("Sem vidas! 💔");
+            
+            session.correct = 0;
+            updateBar();
+            document.getElementById('overlay-quiz').style.display = 'flex';
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            const q = questions[Math.floor(Math.random() * questions.length)];
+            document.getElementById('qText').innerText = q.t;
+            const opts = document.getElementById('qOptions');
+            opts.innerHTML = '';
+            
+            q.o.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-opt';
+                btn.innerText = opt;
+                btn.onclick = () => check(idx, q.c, btn);
+                opts.appendChild(btn);
+            });
+        }
+
+        async function check(sel, cor, btn) {
+            const all = document.querySelectorAll('.btn-opt');
+            all.forEach(b => b.disabled = true);
+
+            if(sel === cor) {
+                btn.classList.add('correct');
+                session.correct++;
+                updateBar();
+                setTimeout(async () => {
+                    if(session.correct >= session.goal) {
+                        await finishLevel();
+                    } else {
+                        nextQuestion();
+                    }
+                }, 1000);
+            } else {
+                btn.classList.add('wrong');
+                await apiLoseLife();
+                const lives = await updateHeader(); // Atualiza contador
+                if(lives.lives <= 0) {
+                    alert("Game Over!");
+                    location.reload();
+                } else {
+                    setTimeout(nextQuestion, 1000);
+                }
+            }
+        }
+
+        function updateBar() {
+            document.getElementById('lessonProgress').style.width = `${(session.correct/session.goal)*100}%`;
+        }
+
+        async function finishLevel() {
+            try {
+                const res = await fetch(`${API_URL}/complete-level`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ user_id: USER_ID, xp_reward: 50 })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    alert("NÍVEL COMPLETADO! 🎉");
+                    location.reload();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function quitQuiz() {
+            if(confirm("Sair custa 1 vida. Confirmar?")) {
+                await apiLoseLife();
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
