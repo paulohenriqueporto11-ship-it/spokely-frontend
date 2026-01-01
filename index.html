@@ -23,7 +23,7 @@
         <div id="screen-home" class="screen">
             <div class="card-home">
                 <h2>Olá, Viajante!</h2>
-                <p>Sua meta: Chegar no nível 5 hoje.</p>
+                <p>Meta: Complete 1 lição completa hoje.</p>
             </div>
             <p style="text-align:center; color:#666; margin-top:50px;">Clique em <b>ESTUDAR</b> lá embaixo 👇</p>
         </div>
@@ -43,14 +43,18 @@
     <div id="quiz-overlay">
         <div class="quiz-card">
             <div class="quiz-header">
-                <span class="difficulty-badge">DESAFIO</span>
+                <span onclick="exitQuiz()" style="cursor:pointer; color:#666; font-size:1.2rem;">✕</span>
+                
+                <div class="lesson-progress-track">
+                    <div id="lessonBar" class="lesson-progress-fill"></div>
+                </div>
+                
                 <span id="livesInQuiz" style="color:#ff4d4d; font-weight:bold;">❤❤❤❤❤</span>
             </div>
             
             <p class="quiz-question" id="qText">Carregando...</p>
             <div class="quiz-opts" id="qOptions"></div>
             
-            <button id="btnExit" onclick="exitQuiz()">Desistir (Perde Vida)</button>
         </div>
     </div>
 
