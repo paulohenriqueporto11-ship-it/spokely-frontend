@@ -51,14 +51,17 @@ main { flex: 1; position: relative; overflow: hidden; }
     z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px;
 }
 .quiz-card { background: #1f1f1f; width: 100%; max-width: 350px; padding: 2rem; border-radius: 20px; border: 1px solid #333; text-align: center; }
-.quiz-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
-.difficulty-badge { background: #333; color: #adff2f; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
+
+/* Barra de Progresso da Lição */
+.quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 10px; }
+.lesson-progress-track { flex: 1; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
+.lesson-progress-fill { width: 0%; height: 100%; background: #adff2f; transition: width 0.3s ease; }
+
 .quiz-question { font-size: 1.4rem; font-weight: 700; margin-bottom: 25px; color: #fff; }
 .quiz-opts { display: flex; flex-direction: column; gap: 10px; }
 .btn-opt { padding: 16px; background: #2a2a2a; border: 2px solid transparent; color: #fff; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 1rem; }
 .btn-opt.correct { background: #adff2f; color: #000; border-color: #adff2f; }
 .btn-opt.wrong { background: #ff4d4d; border-color: #ff4d4d; }
-#btnExit { margin-top: 20px; background: none; border: none; color: #666; text-decoration: underline; cursor: pointer; }
 
 /* NAV */
 nav { background: #1f1f1f; border-top: 1px solid #333; height: 65px; display: flex; justify-content: space-around; align-items: center; z-index: 20; }
