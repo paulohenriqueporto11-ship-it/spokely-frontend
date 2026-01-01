@@ -61,24 +61,17 @@
 
         // Carrega Mapa ao iniciar
         window.addEventListener('load', async () => {
-            // updateHeader vem do js/script.js
             const data = await updateHeader(); 
             
             if(data) {
                 currentLevel = data.current_level || 1;
                 renderMap();
                 setTimeout(scrollToLevel, 300);
-
-                // --- FIX: O Loading some aqui ---
-                const loadScreen = document.getElementById('loading');
-                if(loadScreen) loadScreen.style.display = 'none';
-            } else {
-                // Se der erro no carregamento, avisa (opcional)
-                console.warn("Dados não carregaram corretamente.");
-                // Mesmo com erro, remove o loading pra não travar a tela
-                const loadScreen = document.getElementById('loading');
-                if(loadScreen) loadScreen.style.display = 'none';
             }
+            
+            // Remove Loading
+            const loadScreen = document.getElementById('loading');
+            if(loadScreen) loadScreen.style.display = 'none';
         });
 
         function renderMap() {
@@ -111,12 +104,22 @@
             if(el) el.scrollIntoView({ inline: 'center', behavior: 'smooth' });
         }
 
-        // --- SISTEMA DE QUIZ CONECTADO AO BACKEND ---
+        // --- SISTEMA DE QUIZ ---
         async function startSession() {
             const lives = document.getElementById('livesDisplay').innerText;
-            if(parseInt(lives) <= 0) return alert("Sem vidas! 💔");
+            if(parseInt(lives) <= 0) {
+                document.getElementById('overlay-quiz').style.display = 'flex';
+                showFeedback('gameover');
+                return;
+            }
             
-            // UI de Carregamento do Quiz
+            // Reseta a UI do Quiz (caso tenha ficado tela de vitória antiga)
+            document.querySelector('.quiz-content').innerHTML = `
+                <h2 id="qText" style="margin-bottom:20px;">Carregando...</h2>
+                <div id="qOptions"></div>
+            `;
+            
+            // UI de Carregamento
             document.getElementById('overlay-quiz').style.display = 'flex';
             document.getElementById('qText').innerText = "Carregando atividade...";
             document.getElementById('qOptions').innerHTML = "";
@@ -124,17 +127,15 @@
             const difficulty = 'easy'; 
 
             try {
-                // BUSCA PERGUNTAS NO SERVIDOR
                 const res = await fetch(`${API_URL}/get-activity?user_id=${USER_ID}&difficulty=${difficulty}`);
                 const data = await res.json();
 
                 if(!data.success) {
-                    alert(data.error || "Erro ao buscar atividades.");
+                    alert(data.error || "Erro ao buscar atividades."); // Fallback simples
                     document.getElementById('overlay-quiz').style.display = 'none';
                     return;
                 }
 
-                // Prepara a sessão
                 session.questions = data.questions;
                 session.correct = 0;
                 session.goal = session.questions.length;
@@ -153,7 +154,7 @@
         function nextQuestion() {
             const q = session.questions.pop(); 
             
-            if (!q) return; // Segurança
+            if (!q) return; 
 
             session.currentQ = q; 
 
@@ -175,13 +176,13 @@
             all.forEach(b => b.disabled = true);
 
             if(sel === cor) {
+                // ACERTOU
                 btn.classList.add('correct');
                 session.correct++;
                 session.answeredIds.push(session.currentQ.id); 
                 updateBar();
                 
                 setTimeout(async () => {
-                    // Se acabou as perguntas ou atingiu a meta
                     if(session.questions.length === 0 || session.correct >= session.goal) {
                          await finishLevel();
                     } else {
@@ -189,24 +190,24 @@
                     }
                 }, 1000);
             } else {
+                // ERROU
                 btn.classList.add('wrong');
                 all[cor].classList.add('correct'); 
                 
                 await apiLoseLife(); 
-                const lives = await updateHeader(); 
+                const livesData = await updateHeader(); 
                 
-                if(lives && lives.lives <= 0) {
-                    alert("Game Over!");
-                    location.reload();
-                } else {
-                    if(session.questions.length > 0) {
-                        setTimeout(nextQuestion, 1500);
+                setTimeout(() => {
+                    if(livesData && livesData.lives <= 0) {
+                         showFeedback('gameover');
                     } else {
-                        // Se errou a última e não bateu a meta
-                        alert("Não atingiu a meta. Tente novamente!");
-                        location.reload();
+                        if(session.questions.length > 0) {
+                            nextQuestion();
+                        } else {
+                            showFeedback('retry');
+                        }
                     }
-                }
+                }, 1500);
             }
         }
 
@@ -214,9 +215,14 @@
             document.getElementById('lessonProgress').style.width = `${(session.correct/session.goal)*100}%`;
         }
 
+        // --- UI OTIMISTA (Sem delay) ---
         async function finishLevel() {
+            // 1. Mostra a vitória NA HORA
+            showFeedback('victory');
+
+            // 2. Salva no banco em segundo plano
             try {
-                const res = await fetch(`${API_URL}/complete-level`, {
+                await fetch(`${API_URL}/complete-level`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
@@ -225,12 +231,45 @@
                         questions_ids: session.answeredIds
                     })
                 });
-                const data = await res.json();
-                if(data.success) {
-                    alert("NÍVEL COMPLETADO! 🎉");
-                    location.reload();
-                }
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("Erro ao salvar progresso", e); }
+        }
+
+        // --- GERENCIADOR DE TELAS FINAIS (SEM ALERT) ---
+        function showFeedback(type) {
+            const contentDiv = document.querySelector('.quiz-content');
+            let html = '';
+            
+            if (type === 'victory') {
+                 
+                html = `
+                    <div class="feedback-content">
+                        <span class="feedback-icon">🏆</span>
+                        <div class="feedback-title" style="color:var(--primary)">NÍVEL COMPLETADO!</div>
+                        <p class="feedback-msg">Você ganhou +50 XP e subiu de nível!</p>
+                        <button class="btn-action" onclick="location.reload()">CONTINUAR</button>
+                    </div>
+                `;
+            } else if (type === 'gameover') {
+                 
+                html = `
+                    <div class="feedback-content">
+                        <span class="feedback-icon">💔</span>
+                        <div class="feedback-title" style="color:var(--danger)">SEM VIDAS!</div>
+                        <p class="feedback-msg">Descanse um pouco e tente novamente.</p>
+                        <button class="btn-action danger" onclick="location.reload()">SAIR</button>
+                    </div>
+                `;
+            } else if (type === 'retry') {
+                 html = `
+                    <div class="feedback-content">
+                        <span class="feedback-icon">😢</span>
+                        <div class="feedback-title">NÃO FOI DESSA VEZ</div>
+                        <p class="feedback-msg">Você não acertou o suficiente.</p>
+                        <button class="btn-action" onclick="location.reload()">TENTAR DE NOVO</button>
+                    </div>
+                `;
+            }
+            contentDiv.innerHTML = html;
         }
 
         async function quitQuiz() {
